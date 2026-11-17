@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:provider/provider.dart';
 
 import '../state/app_state.dart';
@@ -300,7 +301,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 const SizedBox(height: 16),
                 AuthOutlineButton(
                   label: 'Continue with GitHub',
-                  icon: Icons.code,
+                  icon: FontAwesomeIcons.github,
                   onPressed: () =>
                       Navigator.of(context).pushNamed('/oauth/github'),
                 ),
@@ -315,7 +316,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 const GatedFeature(
                   label: 'Continue with Google',
                   reason: "Google sign-in isn't set up on the server yet.",
-                  icon: Icons.g_mobiledata,
+                  icon: FontAwesomeIcons.google,
                 ),
               ],
             ),
@@ -600,7 +601,7 @@ class _SignupScreenState extends State<SignupScreen> {
                 const SizedBox(height: 16),
                 AuthOutlineButton(
                   label: 'Continue with GitHub',
-                  icon: Icons.code,
+                  icon: FontAwesomeIcons.github,
                   onPressed: () =>
                       Navigator.of(context).pushNamed('/oauth/github'),
                 ),
@@ -615,7 +616,7 @@ class _SignupScreenState extends State<SignupScreen> {
                 const GatedFeature(
                   label: 'Continue with Google',
                   reason: "Google sign-up isn't set up on the server yet.",
-                  icon: Icons.g_mobiledata,
+                  icon: FontAwesomeIcons.google,
                 ),
               ],
             ),

@@ -840,6 +840,12 @@ class _PlaylistDetailsScreenState extends State<PlaylistDetailsScreen> {
 
   Future<void> _load() async {
     final state = context.read<AppState>();
+    // Playlists belong to an account: a guest sees the login prompt, never
+    // a raw server error (the old "Please login (10001)" screen).
+    if (state.user == null) {
+      setState(() => _loading = false);
+      return;
+    }
     setState(() {
       _loading = true;
       _error = null;
@@ -864,6 +870,11 @@ class _PlaylistDetailsScreenState extends State<PlaylistDetailsScreen> {
   @override
   Widget build(BuildContext context) {
     final state = context.watch<AppState>();
+    // A guest, or a session that died mid-use (the server answers
+    // "Please log in to continue."), gets the login prompt — never the raw
+    // error screen.
+    final needsLogin =
+        state.user == null || _error == 'Please log in to continue.';
     return Scaffold(
       appBar: AppBar(
         title: Text(_playlist?.name ?? 'Playlist'),
@@ -896,13 +907,24 @@ class _PlaylistDetailsScreenState extends State<PlaylistDetailsScreen> {
             ),
         ],
       ),
-      body: _loading
-          ? const Center(child: CircularProgressIndicator())
-          : _error != null
-              ? ErrorView(message: _error!, onRetry: _load)
-              : _playlist == null
-                  ? const EmptyState(
-                      icon: Icons.playlist_remove,
+      body: needsLogin
+          ? EmptyState(
+              icon: Icons.lock_outline,
+              title: 'Log in to see this playlist',
+              message: 'Playlists belong to your account.',
+              action: ElevatedButton(
+                onPressed: () =>
+                    Navigator.of(context).pushNamed('/login'),
+                child: const Text('Log in'),
+              ),
+            )
+          : _loading
+              ? const Center(child: CircularProgressIndicator())
+              : _error != null
+                  ? ErrorView(message: _error!, onRetry: _load)
+                  : _playlist == null
+                      ? const EmptyState(
+                          icon: Icons.playlist_remove,
                       title: 'Playlist not found',
                       message:
                           'This playlist is private or no longer exists.',

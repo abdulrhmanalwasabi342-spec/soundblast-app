@@ -144,8 +144,25 @@ class _GitHubOAuthScreenState extends State<GitHubOAuthScreen> {
             Padding(
               padding:
                   const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-              child: Text(_note!,
-                  style: const TextStyle(color: SbColors.danger)),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(_note!,
+                        style: const TextStyle(color: SbColors.danger)),
+                  ),
+                  const SizedBox(width: 8),
+                  OutlinedButton(
+                    // The GitHub page can fail to load on a flaky connection
+                    // (e.g. QUIC errors) — retry instead of a dead screen.
+                    onPressed: () {
+                      setState(() => _note = null);
+                      _controller.loadRequest(
+                          Uri.parse('$_site/api/auth/github'));
+                    },
+                    child: const Text('Retry'),
+                  ),
+                ],
+              ),
             ),
           Expanded(child: WebViewWidget(controller: _controller)),
           SafeArea(

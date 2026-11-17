@@ -2,7 +2,7 @@ name: soundblast
 description: "SoundBlast — music streaming platform for Android. Native Flutter client for the SoundBlast website (https://soundblast.onrender.com)."
 publish_to: 'none'
 
-version: 1.0.5+6
+version: 1.0.6+7
 
 environment:
   sdk: ^3.9.2
@@ -32,6 +32,9 @@ dependencies:
   # sound_local_session cookie after the GitHub OAuth WebView returns).
   webview_flutter_android: ^4.12.0
   path_provider: ^2.1.5
+  # Brand icons the user must recognise at a glance: the GitHub mark and
+  # the Google "G" on the login/signup buttons (Material has neither).
+  font_awesome_flutter: ^10.10.0
 
 dev_dependencies:
   flutter_test:

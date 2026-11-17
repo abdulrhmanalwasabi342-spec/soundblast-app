@@ -154,6 +154,11 @@ class TrpcClient {
 
   /// Shorten raw DB/driver errors into something a user can read.
   static String _friendly(String msg) {
+    // The server's auth error carries a raw numeric code (10001) that means
+    // nothing to a user — every screen shows a plain login prompt instead.
+    if (msg.contains('Please login (10001)')) {
+      return 'Please log in to continue.';
+    }
     if (msg.startsWith('Failed query:')) {
       return 'The server database returned an error. Please try again later.';
     }
