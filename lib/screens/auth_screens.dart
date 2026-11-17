@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../state/app_state.dart';
+import '../widgets/auth_shell.dart';
 import '../widgets/common.dart';
 
 /// Onboarding — the website's three-screen first-visit intro.
@@ -168,6 +169,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final _email = TextEditingController();
   final _password = TextEditingController();
   bool _busy = false;
+  bool _showPassword = false;
   String? _error;
 
   Future<void> _login() async {
@@ -202,103 +204,128 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Log in')),
-      body: ListView(
-        padding: const EdgeInsets.all(24),
+    final canPop = Navigator.of(context).canPop();
+    return AuthShell(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const SizedBox(height: 24),
-          const Center(
-            child: Text('SoundBlast',
-                style: TextStyle(fontSize: 32, fontWeight: FontWeight.w900)),
-          ),
-          const SizedBox(height: 8),
-          const Center(
-            child: Text('Welcome back.',
-                style: TextStyle(color: SbColors.muted, fontSize: 16)),
-          ),
-          const SizedBox(height: 32),
-          TextField(
-            controller: _email,
-            decoration: const InputDecoration(labelText: 'Email'),
-            keyboardType: TextInputType.emailAddress,
-            autocorrect: false,
-          ),
-          const SizedBox(height: 16),
-          TextField(
-            controller: _password,
-            decoration: const InputDecoration(labelText: 'Password'),
-            obscureText: true,
-          ),
-          if (_error != null)
-            Padding(
-              padding: const EdgeInsets.only(top: 12),
-              child: Text(_error!,
-                  style: const TextStyle(color: SbColors.danger)),
+          if (canPop)
+            Align(
+              alignment: Alignment.centerLeft,
+              child: IconButton(
+                icon: const Icon(Icons.arrow_back),
+                onPressed: () => Navigator.of(context).pop(),
+              ),
             ),
+          const SizedBox(height: 8),
+          const AuthBrandHeader(),
           const SizedBox(height: 24),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              onPressed: _busy ? null : _login,
-              child: _busy
-                  ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2))
-                  : const Text('Log in'),
-            ),
-          ),
-          const SizedBox(height: 8),
-          TextButton(
-            onPressed: () =>
-                Navigator.of(context).pushNamed('/forgot-password'),
-            child: const Text('Forgot password?'),
-          ),
-          const SizedBox(height: 8),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Text("Don't have an account? ",
-                  style: TextStyle(color: SbColors.muted)),
-              GestureDetector(
-                onTap: () => Navigator.of(context)
-                    .pushReplacementNamed('/signup'),
-                child: const Text('Sign up',
+          AuthCard(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const Center(
+                  child: GradientText(
+                    'Welcome back.',
+                    style:
+                        TextStyle(fontSize: 30, fontWeight: FontWeight.w900),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                const Center(
+                  child: Text(
+                    'Log in to continue listening.',
+                    textAlign: TextAlign.center,
                     style: TextStyle(
-                        color: SbColors.accent,
-                        fontWeight: FontWeight.w700)),
-              ),
-            ],
-          ),
-          const SizedBox(height: 24),
-          const Row(
-            children: [
-              Expanded(child: Divider(color: SbColors.border)),
-              Padding(
-                padding: EdgeInsets.symmetric(horizontal: 12),
-                child: Text('or continue with',
-                    style: TextStyle(color: SbColors.muted, fontSize: 13)),
-              ),
-              Expanded(child: Divider(color: SbColors.border)),
-            ],
-          ),
-          const SizedBox(height: 16),
-          SizedBox(
-            width: double.infinity,
-            child: OutlinedButton.icon(
-              onPressed: () =>
-                  Navigator.of(context).pushNamed('/oauth/github'),
-              icon: const Icon(Icons.code),
-              label: const Text('Continue with GitHub'),
+                        color: Colors.white54, fontSize: 14, height: 1.5),
+                  ),
+                ),
+                const SizedBox(height: 24),
+                if (_error != null) ...[
+                  AuthErrorBanner(_error!),
+                  const SizedBox(height: 16),
+                ],
+                const AuthLabel('Email'),
+                AuthTextField(
+                  controller: _email,
+                  icon: Icons.mail_outline,
+                  hint: 'name@example.com',
+                  keyboardType: TextInputType.emailAddress,
+                  onSubmitted: _login,
+                ),
+                const SizedBox(height: 16),
+                const AuthLabel('Password'),
+                AuthTextField(
+                  controller: _password,
+                  icon: Icons.lock_outline,
+                  hint: '••••••••',
+                  obscureText: !_showPassword,
+                  suffix: IconButton(
+                    icon: Icon(
+                      _showPassword
+                          ? Icons.visibility_off
+                          : Icons.visibility,
+                      size: 18,
+                      color: Colors.white54,
+                    ),
+                    onPressed: () =>
+                        setState(() => _showPassword = !_showPassword),
+                  ),
+                  onSubmitted: _login,
+                ),
+                const SizedBox(height: 12),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: TextButton(
+                    onPressed: () => Navigator.of(context)
+                        .pushNamed('/forgot-password'),
+                    child: const Text(
+                      'Forgot password?',
+                      style: TextStyle(
+                        color: Color(0xFFF0ABFC),
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                AuthGradientButton(
+                  label: 'Log in',
+                  icon: Icons.favorite,
+                  busy: _busy,
+                  onPressed: _login,
+                ),
+                const SizedBox(height: 20),
+                const AuthDivider('or continue with'),
+                const SizedBox(height: 16),
+                AuthOutlineButton(
+                  label: 'Continue with GitHub',
+                  icon: Icons.code,
+                  onPressed: () =>
+                      Navigator.of(context).pushNamed('/oauth/github'),
+                ),
+                const SizedBox(height: 12),
+                AuthOutlineButton(
+                  label: 'Create a new account',
+                  icon: Icons.auto_awesome,
+                  onPressed: () => Navigator.of(context)
+                      .pushReplacementNamed('/signup'),
+                ),
+                const SizedBox(height: 12),
+                const GatedFeature(
+                  label: 'Continue with Google',
+                  reason: "Google sign-in isn't set up on the server yet.",
+                  icon: Icons.g_mobiledata,
+                ),
+              ],
             ),
           ),
-          const SizedBox(height: 8),
-          const GatedFeature(
-            label: 'Continue with Google',
-            reason:
-                'Google sign-in is not available on the SoundBlast server yet — it needs a new server route and a Google Cloud OAuth client. Email sign-in works today.',
-            icon: Icons.g_mobiledata,
+          const SizedBox(height: 20),
+          const Center(
+            child: Text(
+              'SoundBlast · welcome back',
+              style: TextStyle(color: Colors.white24, fontSize: 12),
+            ),
           ),
         ],
       ),
@@ -324,6 +351,7 @@ class _SignupScreenState extends State<SignupScreen> {
   String _role = 'user';
   bool _policy = false;
   bool _busy = false;
+  bool _showPassword = false;
   String? _error;
   String? _avatarUrl;
   String? _avatarName;
@@ -417,161 +445,187 @@ class _SignupScreenState extends State<SignupScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Sign up')),
-      body: ListView(
-        padding: const EdgeInsets.all(24),
+    final canPop = Navigator.of(context).canPop();
+    return AuthShell(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const Center(
-            child: Text('Join SoundBlast',
-                style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900)),
-          ),
-          const SizedBox(height: 24),
-          Center(
-            child: GestureDetector(
-              onTap: _uploadingAvatar ? null : _pickAvatar,
-              child: CircleAvatar(
-                radius: 44,
-                backgroundColor: SbColors.surface2,
-                backgroundImage: _avatarUrl != null
-                    ? NetworkImage(_avatarUrl!)
-                    : null,
-                child: _avatarUrl == null
-                    ? (_uploadingAvatar
-                        ? const CircularProgressIndicator()
-                        : const Icon(Icons.add_a_photo,
-                            color: SbColors.muted))
-                    : null,
+          if (canPop)
+            Align(
+              alignment: Alignment.centerLeft,
+              child: IconButton(
+                icon: const Icon(Icons.arrow_back),
+                onPressed: () => Navigator.of(context).pop(),
               ),
             ),
-          ),
           const SizedBox(height: 8),
-          Center(
-            child: Text(_avatarName ?? 'Add a profile photo (optional)',
-                style: const TextStyle(color: SbColors.muted, fontSize: 13)),
-          ),
+          const AuthBrandHeader(),
           const SizedBox(height: 24),
-          TextField(
-            controller: _name,
-            decoration: const InputDecoration(labelText: 'Your name'),
-          ),
-          const SizedBox(height: 16),
-          TextField(
-            controller: _email,
-            decoration: const InputDecoration(labelText: 'Email'),
-            keyboardType: TextInputType.emailAddress,
-            autocorrect: false,
-          ),
-          const SizedBox(height: 16),
-          TextField(
-            controller: _password,
-            decoration:
-                const InputDecoration(labelText: 'Password (min 8 characters)'),
-            obscureText: true,
-          ),
-          const SizedBox(height: 16),
-          const Text('I am joining as:',
-              style: TextStyle(fontWeight: FontWeight.w600)),
-          const SizedBox(height: 8),
-          SegmentedButton<String>(
-            segments: const [
-              ButtonSegment(
-                  value: 'user',
-                  label: Text('Listener'),
-                  icon: Icon(Icons.headphones)),
-              ButtonSegment(
-                  value: 'artist',
-                  label: Text('Artist'),
-                  icon: Icon(Icons.mic)),
-            ],
-            selected: {_role},
-            onSelectionChanged: (s) => setState(() => _role = s.first),
-          ),
-          if (_role == 'artist') ...[
-            const SizedBox(height: 16),
-            TextField(
-              controller: _stageName,
-              decoration:
-                  const InputDecoration(labelText: 'Stage name'),
-            ),
-          ],
-          const SizedBox(height: 16),
-          CheckboxListTile(
-            value: _policy,
-            onChanged: (v) => setState(() => _policy = v ?? false),
-            title: const Text(
-                'I accept the Terms & Privacy Policy',
-                style: TextStyle(fontSize: 14)),
-            controlAffinity: ListTileControlAffinity.leading,
-            contentPadding: EdgeInsets.zero,
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(context).pushNamed('/policy'),
-            child: const Text('Read the Terms, Privacy & Permissions'),
-          ),
-          if (_error != null)
-            Padding(
-              padding: const EdgeInsets.only(top: 8),
-              child: Text(_error!,
-                  style: const TextStyle(color: SbColors.danger)),
-            ),
-          const SizedBox(height: 16),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              onPressed: _busy ? null : _signup,
-              child: _busy
-                  ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2))
-                  : const Text('Create account'),
-            ),
-          ),
-          const SizedBox(height: 8),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Text('Already have an account? ',
-                  style: TextStyle(color: SbColors.muted)),
-              GestureDetector(
-                onTap: () => Navigator.of(context)
-                    .pushReplacementNamed('/login'),
-                child: const Text('Log in',
+          AuthCard(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const Center(
+                  child: GradientText(
+                    'Join SoundBlast',
+                    style:
+                        TextStyle(fontSize: 30, fontWeight: FontWeight.w900),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                const Center(
+                  child: Text(
+                    'Create your account to start listening.',
+                    textAlign: TextAlign.center,
                     style: TextStyle(
-                        color: SbColors.accent,
-                        fontWeight: FontWeight.w700)),
-              ),
-            ],
-          ),
-          const SizedBox(height: 24),
-          const Row(
-            children: [
-              Expanded(child: Divider(color: SbColors.border)),
-              Padding(
-                padding: EdgeInsets.symmetric(horizontal: 12),
-                child: Text('or sign up with',
-                    style: TextStyle(color: SbColors.muted, fontSize: 13)),
-              ),
-              Expanded(child: Divider(color: SbColors.border)),
-            ],
-          ),
-          const SizedBox(height: 16),
-          SizedBox(
-            width: double.infinity,
-            child: OutlinedButton.icon(
-              onPressed: () =>
-                  Navigator.of(context).pushNamed('/oauth/github'),
-              icon: const Icon(Icons.code),
-              label: const Text('Continue with GitHub'),
+                        color: Colors.white54, fontSize: 14, height: 1.5),
+                  ),
+                ),
+                const SizedBox(height: 24),
+                Center(
+                  child: GestureDetector(
+                    onTap: _uploadingAvatar ? null : _pickAvatar,
+                    child: CircleAvatar(
+                      radius: 44,
+                      backgroundColor: SbColors.surface2,
+                      backgroundImage: _avatarUrl != null
+                          ? NetworkImage(_avatarUrl!)
+                          : null,
+                      child: _avatarUrl == null
+                          ? (_uploadingAvatar
+                              ? const CircularProgressIndicator()
+                              : const Icon(Icons.add_a_photo,
+                                  color: SbColors.muted))
+                          : null,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Center(
+                  child: Text(
+                      _avatarName ?? 'Add a profile photo (optional)',
+                      style: const TextStyle(
+                          color: Colors.white54, fontSize: 13)),
+                ),
+                const SizedBox(height: 24),
+                if (_error != null) ...[
+                  AuthErrorBanner(_error!),
+                  const SizedBox(height: 16),
+                ],
+                const AuthLabel('Your name'),
+                AuthTextField(
+                  controller: _name,
+                  icon: Icons.person_outline,
+                  hint: 'Your name',
+                ),
+                const SizedBox(height: 16),
+                const AuthLabel('Email'),
+                AuthTextField(
+                  controller: _email,
+                  icon: Icons.mail_outline,
+                  hint: 'name@example.com',
+                  keyboardType: TextInputType.emailAddress,
+                ),
+                const SizedBox(height: 16),
+                const AuthLabel('Password'),
+                AuthTextField(
+                  controller: _password,
+                  icon: Icons.lock_outline,
+                  hint: 'At least 8 characters',
+                  obscureText: !_showPassword,
+                  suffix: IconButton(
+                    icon: Icon(
+                      _showPassword
+                          ? Icons.visibility_off
+                          : Icons.visibility,
+                      size: 18,
+                      color: Colors.white54,
+                    ),
+                    onPressed: () =>
+                        setState(() => _showPassword = !_showPassword),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                const Text('I am joining as:',
+                    style: TextStyle(fontWeight: FontWeight.w600)),
+                const SizedBox(height: 8),
+                SegmentedButton<String>(
+                  segments: const [
+                    ButtonSegment(
+                        value: 'user',
+                        label: Text('Listener'),
+                        icon: Icon(Icons.headphones)),
+                    ButtonSegment(
+                        value: 'artist',
+                        label: Text('Artist'),
+                        icon: Icon(Icons.mic)),
+                  ],
+                  selected: {_role},
+                  onSelectionChanged: (s) =>
+                      setState(() => _role = s.first),
+                ),
+                if (_role == 'artist') ...[
+                  const SizedBox(height: 16),
+                  const AuthLabel('Stage name'),
+                  AuthTextField(
+                    controller: _stageName,
+                    icon: Icons.mic,
+                    hint: 'Stage name',
+                  ),
+                ],
+                const SizedBox(height: 16),
+                CheckboxListTile(
+                  value: _policy,
+                  onChanged: (v) => setState(() => _policy = v ?? false),
+                  title: const Text('I accept the Terms & Privacy Policy',
+                      style: TextStyle(fontSize: 14)),
+                  controlAffinity: ListTileControlAffinity.leading,
+                  contentPadding: EdgeInsets.zero,
+                ),
+                TextButton(
+                  onPressed: () =>
+                      Navigator.of(context).pushNamed('/policy'),
+                  child:
+                      const Text('Read the Terms, Privacy & Permissions'),
+                ),
+                const SizedBox(height: 8),
+                AuthGradientButton(
+                  label: 'Create account',
+                  icon: Icons.auto_awesome,
+                  busy: _busy,
+                  onPressed: _signup,
+                ),
+                const SizedBox(height: 20),
+                const AuthDivider('or sign up with'),
+                const SizedBox(height: 16),
+                AuthOutlineButton(
+                  label: 'Continue with GitHub',
+                  icon: Icons.code,
+                  onPressed: () =>
+                      Navigator.of(context).pushNamed('/oauth/github'),
+                ),
+                const SizedBox(height: 12),
+                AuthOutlineButton(
+                  label: 'Log in',
+                  icon: Icons.login,
+                  onPressed: () => Navigator.of(context)
+                      .pushReplacementNamed('/login'),
+                ),
+                const SizedBox(height: 12),
+                const GatedFeature(
+                  label: 'Continue with Google',
+                  reason: "Google sign-up isn't set up on the server yet.",
+                  icon: Icons.g_mobiledata,
+                ),
+              ],
             ),
           ),
-          const SizedBox(height: 8),
-          const GatedFeature(
-            label: 'Continue with Google',
-            reason:
-                'Google sign-in is not available on the SoundBlast server yet — it needs a new server route and a Google Cloud OAuth client. Email sign-up works today.',
-            icon: Icons.g_mobiledata,
+          const SizedBox(height: 20),
+          const Center(
+            child: Text(
+              'SoundBlast · join the music',
+              style: TextStyle(color: Colors.white24, fontSize: 12),
+            ),
           ),
         ],
       ),
