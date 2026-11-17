@@ -36,58 +36,75 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> _load() async {
     final state = context.read<AppState>();
+    // Cache first: repeat opens render instantly even while the server is
+    // still waking up; the network refresh below replaces the cache.
+    final cached = state.cachedHome;
     setState(() {
-      _loading = true;
       _error = null;
       _usedFallback = false;
-      _showingCache = false;
+      if (cached != null) {
+        _summary = cached;
+        _songs = state.cachedSongs ?? [];
+        _loading = false;
+        _showingCache = true;
+      } else {
+        _loading = true;
+        _showingCache = false;
+      }
     });
     try {
       HomeSummary summary;
+      List<Song> freshSongs;
       try {
         summary = await state.api.homeSummary();
+        freshSongs = await state.api.allSongs();
       } on ApiException {
         // Live backend defect (2026-11-17): songs.homeSummary returns 500
         // because its artist-posts query fails server-side. Fall back to the
         // individual public endpoints, which do work.
         _usedFallback = true;
-        final songs = await state.api.allSongs();
+        freshSongs = await state.api.allSongs();
         final trending = await state.api.trending();
         summary = HomeSummary(
-          trendingSongs: trending.isNotEmpty ? trending : songs.take(8).toList(),
+          trendingSongs:
+              trending.isNotEmpty ? trending : freshSongs.take(8).toList(),
           albums: [],
           artists: [],
           recentPublicPosts: [],
-          totalSongs: songs.length,
-          totalPlays: songs.fold(0, (a, s) => a + s.playCount),
+          totalSongs: freshSongs.length,
+          totalPlays: freshSongs.fold(0, (a, s) => a + s.playCount),
         );
-        _songs = songs;
       }
-      final songs = _songs.isNotEmpty ? _songs : await state.api.allSongs();
       final genres = await state.api.genres();
       if (!mounted) return;
       setState(() {
         _summary = summary;
-        _songs = songs;
+        _songs = freshSongs;
         _genres = genres;
         _loading = false;
+        _showingCache = false;
       });
-      await state.cacheHome(summary, songs);
+      await state.cacheHome(summary, freshSongs);
     } catch (e) {
       if (!mounted) return;
-      final state2 = context.read<AppState>();
-      if (state2.cachedHome != null) {
-        setState(() {
-          _summary = state2.cachedHome;
-          _songs = state2.cachedSongs ?? [];
-          _loading = false;
-          _showingCache = true;
-        });
+      if (_summary != null) {
+        // The cache is already on screen; the refresh just failed quietly.
+        setState(() => _showingCache = true);
       } else {
-        setState(() {
-          _error = e.toString();
-          _loading = false;
-        });
+        final state2 = context.read<AppState>();
+        if (state2.cachedHome != null) {
+          setState(() {
+            _summary = state2.cachedHome;
+            _songs = state2.cachedSongs ?? [];
+            _loading = false;
+            _showingCache = true;
+          });
+        } else {
+          setState(() {
+            _error = e.toString();
+            _loading = false;
+          });
+        }
       }
     }
   }

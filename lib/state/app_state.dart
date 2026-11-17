@@ -109,16 +109,29 @@ class AppState extends ChangeNotifier {
         cachedSongs = list.map(Song.fromJson).toList();
       } catch (_) {}
     }
+    // The UI must never wait on the network to appear: on a cold start the
+    // Render backend can sleep for up to a minute, and gating the first
+    // screen on api.me() left the user staring at a bare spinner for that
+    // long (1.0.4). Mark auth as checked from local state alone; the server
+    // check runs in the background and updates the user when it answers.
+    authChecked = true;
+    notifyListeners();
+    downloads.addListener(notifyListeners);
+    unawaited(downloads.load());
+    unawaited(_refreshAuth());
+  }
+
+  /// Background server auth check: updates the signed-in user when the
+  /// server answers; a sleeping server just leaves the guest state until
+  /// then instead of blocking the whole app.
+  Future<void> _refreshAuth() async {
     try {
       user = await api.me();
     } catch (e) {
       lastError = e.toString();
       user = null;
     }
-    authChecked = true;
     notifyListeners();
-    downloads.addListener(notifyListeners);
-    unawaited(downloads.load());
     if (user != null) {
       unawaited(refreshLibrary());
     }
