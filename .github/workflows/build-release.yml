@@ -59,7 +59,12 @@ jobs:
         run: flutter analyze --no-fatal-infos
 
       - name: Build APK arm64 (release)
-        run: flutter build apk --release --target-platform android-arm64
+        run: |
+          flutter build apk --release --target-platform android-arm64
+          # --target-platform does NOT change the output name (only
+          # --split-per-abi does), so the arm64-only APK is app-release.apk
+          # at this point — rename it before the universal build overwrites it.
+          cp build/app/outputs/flutter-apk/app-release.apk build/app/outputs/flutter-apk/app-arm64-v8a-release.apk
 
       - name: Build APK universal (release)
         run: flutter build apk --release
