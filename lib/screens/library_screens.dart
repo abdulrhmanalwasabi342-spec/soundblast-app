@@ -6,6 +6,7 @@ import '../api/models.dart';
 import '../services/downloads.dart';
 import '../services/permission_flow.dart';
 import '../state/app_state.dart';
+import '../widgets/app_drawer.dart';
 import '../widgets/common.dart';
 import 'home_screens.dart' show SongActions;
 
@@ -74,7 +75,8 @@ class _SearchScreenState extends State<SearchScreen> {
     final state = context.watch<AppState>();
     final hasQuery = _controller.text.trim().isNotEmpty;
     return Scaffold(
-      appBar: AppBar(title: const Text('Search')),
+      appBar: AppBar(
+          leading: const DrawerMenuButton(), title: const Text('Search')),
       body: Column(
         children: [
           Padding(
@@ -279,6 +281,7 @@ class _LibraryScreenState extends State<LibraryScreen>
     final state = context.watch<AppState>();
     return Scaffold(
       appBar: AppBar(
+        leading: const DrawerMenuButton(),
         title: const Text('Your Library'),
         bottom: TabBar(
           controller: _tab,

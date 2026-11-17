@@ -13,6 +13,7 @@ import 'screens/oauth_screen.dart';
 import 'screens/player_screen.dart';
 import 'services/permission_flow.dart';
 import 'state/app_state.dart';
+import 'widgets/app_drawer.dart';
 import 'widgets/common.dart';
 
 void main() {
@@ -210,6 +211,11 @@ class _AppShellState extends State<AppShell> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      key: appShellScaffoldKey,
+      drawer: AppDrawer(
+        currentTab: _index,
+        onSelectTab: (i) => setState(() => _index = i),
+      ),
       body: IndexedStack(index: _index, children: _tabs),
       bottomNavigationBar: Column(
         mainAxisSize: MainAxisSize.min,

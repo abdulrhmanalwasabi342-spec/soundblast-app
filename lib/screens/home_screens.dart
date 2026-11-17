@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../api/models.dart';
 import '../api/trpc_client.dart';
 import '../state/app_state.dart';
+import '../widgets/app_drawer.dart';
 import '../widgets/common.dart';
 
 /// Home / Discover / Trending — mirror the website's Home, Discover and
@@ -96,17 +97,17 @@ class _HomeScreenState extends State<HomeScreen> {
     final state = context.watch<AppState>();
     return Scaffold(
       appBar: AppBar(
+        leading: const DrawerMenuButton(),
         title: Row(
           children: [
-            Container(
-              width: 32,
-              height: 32,
-              decoration: BoxDecoration(
-                color: SbColors.accent,
-                borderRadius: BorderRadius.circular(8),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(8),
+              child: Image.asset(
+                'assets/images/soundblast-logo.png',
+                width: 32,
+                height: 32,
+                fit: BoxFit.cover,
               ),
-              child: const Icon(Icons.music_note,
-                  color: Colors.white, size: 20),
             ),
             const SizedBox(width: 10),
             const Text('SoundBlast',
@@ -1057,7 +1058,9 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
   Widget build(BuildContext context) {
     final state = context.watch<AppState>();
     return Scaffold(
-      appBar: AppBar(title: const Text('Discover')),
+      appBar: AppBar(
+          leading: const DrawerMenuButton(),
+          title: const Text('Discover')),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : _error != null

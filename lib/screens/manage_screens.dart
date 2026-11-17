@@ -8,6 +8,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../api/models.dart';
 import '../state/app_state.dart';
+import '../widgets/app_drawer.dart';
 import '../widgets/common.dart';
 
 /// Profile — the account screen: user info, role, library counts, links to
@@ -20,7 +21,9 @@ class ProfileScreen extends StatelessWidget {
     final state = context.watch<AppState>();
     final user = state.user;
     return Scaffold(
-      appBar: AppBar(title: const Text('Profile')),
+      appBar: AppBar(
+          leading: const DrawerMenuButton(),
+          title: const Text('Profile')),
       body: user == null
           ? EmptyState(
               icon: Icons.person_outline,
