@@ -1,0 +1,53 @@
+name: soundblast
+description: "SoundBlast — music streaming platform for Android. Native Flutter client for the SoundBlast website (https://soundblast.onrender.com)."
+publish_to: 'none'
+
+version: 1.0.1+2
+
+environment:
+  sdk: ^3.9.2
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.8
+  provider: ^6.1.2
+  http: ^1.2.2
+  just_audio: ^0.9.46
+  # NOTE: just_audio_background has no 0.9.x releases — the real latest is
+  # 0.0.1-beta.17 (audio_service 0.18 based). ^0.9.1 does not exist on pub.dev.
+  just_audio_background: ^0.0.1-beta.17
+  audio_session: ^0.1.21
+  flutter_secure_storage: ^9.2.2
+  shared_preferences: ^2.3.3
+  cached_network_image: ^3.4.1
+  file_picker: ^8.1.4
+  url_launcher: ^6.3.1
+  intl: ^0.20.2
+  permission_handler: ^11.3.1
+  device_info_plus: ^11.2.0
+  webview_flutter: ^4.10.0
+  # Direct dep: the cross-platform WebViewCookieManager no longer exposes
+  # getCookies — the Android implementation does (needed to read the
+  # sound_local_session cookie after the GitHub OAuth WebView returns).
+  webview_flutter_android: ^4.12.0
+  path_provider: ^2.1.5
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/fonts/
+  fonts:
+    - family: Vazirmatn
+      fonts:
+        - asset: assets/fonts/Vazirmatn-Regular.ttf
+    - family: PlayfairDisplay
+      fonts:
+        - asset: assets/fonts/PlayfairDisplay.ttf
+        - asset: assets/fonts/PlayfairDisplay-Italic.ttf
+          style: italic
