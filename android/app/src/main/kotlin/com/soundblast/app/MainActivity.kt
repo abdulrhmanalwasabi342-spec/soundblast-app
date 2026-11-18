@@ -1,9 +1,13 @@
 package com.soundblast.app
 
 import android.content.ContentUris
+import android.content.Context
+import android.content.Intent
 import android.database.Cursor
 import android.net.Uri
+import android.os.PowerManager
 import android.provider.MediaStore
+import android.provider.Settings
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
@@ -43,6 +47,43 @@ class MainActivity : FlutterActivity() {
                         result.success(albumArt(albumId))
                     } catch (e: Exception) {
                         result.success(null)
+                    }
+                }
+                "batteryExemptionStatus" -> {
+                    // Samsung battery optimization kills the background
+                    // audio service when the app closes; the exemption is
+                    // what keeps the music playing.
+                    val pm = getSystemService(Context.POWER_SERVICE)
+                        as PowerManager
+                    result.success(
+                        pm.isIgnoringBatteryOptimizations(packageName)
+                    )
+                }
+                "requestBatteryExemption" -> {
+                    try {
+                        val intent = Intent(
+                            Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS,
+                            Uri.parse("package:$packageName"),
+                        )
+                        startActivity(intent)
+                        result.success(true)
+                    } catch (e: Exception) {
+                        // Some ROMs refuse the direct request — fall back
+                        // to the system battery-optimization list.
+                        try {
+                            startActivity(
+                                Intent(
+                                    Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS
+                                )
+                            )
+                            result.success(true)
+                        } catch (e2: Exception) {
+                            result.error(
+                                "BATTERY_SETTINGS_FAILED",
+                                e2.message,
+                                null,
+                            )
+                        }
                     }
                 }
                 else -> result.notImplemented()

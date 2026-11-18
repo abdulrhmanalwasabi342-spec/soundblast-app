@@ -44,22 +44,38 @@ void main() {
     // foreground (no media notification, no play-after-close) instead
     // of breaking the player entirely.
     var backgroundReady = false;
-    try {
-      await JustAudioBackground.init(
-        androidNotificationChannelId: 'com.soundblast.app.audio',
-        androidNotificationChannelName: 'SoundBlast playback',
-        androidNotificationOngoing: true,
-        androidNotificationIcon: 'mipmap/ic_launcher',
-      ).timeout(const Duration(seconds: 30));
-      backgroundReady = true;
-    } catch (e) {
-      debugPrint('SoundBlast background audio unavailable: $e');
+    String? backgroundError;
+    for (var attempt = 0; attempt < 2 && !backgroundReady; attempt++) {
+      if (attempt > 0) {
+        // The first attempt swaps the platform instance before failing;
+        // restore the plain platform so the retry starts clean.
+        JustAudioPlatform.instance = MethodChannelJustAudio();
+        await Future.delayed(const Duration(seconds: 2));
+      }
+      try {
+        await JustAudioBackground.init(
+          androidNotificationChannelId: 'com.soundblast.app.audio',
+          androidNotificationChannelName: 'SoundBlast playback',
+          androidNotificationOngoing: true,
+          androidNotificationIcon: 'mipmap/ic_launcher',
+        ).timeout(const Duration(seconds: 30));
+        backgroundReady = true;
+      } catch (e) {
+        backgroundError = e.toString();
+        debugPrint('SoundBlast background audio unavailable: $e');
+      }
     }
     if (!backgroundReady) {
       JustAudioPlatform.instance = MethodChannelJustAudio();
     }
-    final appState =
-        AppState(backgroundAudioReady: backgroundReady);
+    final appState = AppState(
+      backgroundAudioReady: backgroundReady,
+      backgroundAudioError: backgroundReady || backgroundError == null
+          ? null
+          : (backgroundError.length > 120
+              ? '${backgroundError.substring(0, 120)}…'
+              : backgroundError),
+    );
     runApp(
       ChangeNotifierProvider.value(
         value: appState,

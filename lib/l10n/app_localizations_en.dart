@@ -131,7 +131,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get appName => 'SoundBlast';
 
   @override
-  String get appVersionLabel => 'Version 1.0.23 — Android app';
+  String get appVersionLabel => 'Version 1.0.24 — Android app';
 
   @override
   String get archive => 'Archive';
@@ -1977,4 +1977,26 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get onTheRoster => 'On the roster';
+
+  @override
+  String backgroundAudioError(String error) =>
+      'Background audio error: $error';
+
+  @override
+  String get backgroundBatteryBody =>
+      'Samsung may stop the music when you close the app. Allow SoundBlast to run without battery restrictions.';
+
+  @override
+  String get backgroundBatteryButton => 'Allow background playback';
+
+  @override
+  String get backgroundBatteryOff =>
+      'Battery optimization: off — the system will not stop background music.';
+
+  @override
+  String get backgroundBatteryOn =>
+      'Battery optimization: on — the system may stop the music when the app closes.';
+
+  @override
+  String get backgroundBatteryTitle => 'Keep playing in the background';
 }

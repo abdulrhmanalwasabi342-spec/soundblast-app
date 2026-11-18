@@ -157,6 +157,8 @@ class _PlayerScreenState extends State<PlayerScreen> {
               _SeekBar(state: state),
               _Controls(state: state),
               _VolumeRow(state: state),
+              if (state.batteryExemptionGranted == false)
+                _BackgroundBatteryBanner(state: state),
               Row(
                 children: [
                   TextButton.icon(
@@ -359,6 +361,39 @@ class _PlayerScreenState extends State<PlayerScreen> {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _BackgroundBatteryBanner extends StatelessWidget {
+  final AppState state;
+  const _BackgroundBatteryBanner({required this.state});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(top: 12),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: SbColors.surface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: SbColors.accent.withOpacity(0.4)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(context.l10n.backgroundBatteryTitle,
+              style: const TextStyle(fontWeight: FontWeight.w700)),
+          const SizedBox(height: 4),
+          Text(context.l10n.backgroundBatteryBody,
+              style: const TextStyle(color: SbColors.muted, fontSize: 13)),
+          const SizedBox(height: 8),
+          ElevatedButton(
+            onPressed: () => state.requestBatteryExemption(),
+            child: Text(context.l10n.backgroundBatteryButton),
+          ),
+        ],
       ),
     );
   }

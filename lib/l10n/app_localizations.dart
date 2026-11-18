@@ -308,7 +308,7 @@ abstract class AppLocalizations {
   /// No description provided for @appVersionLabel.
   ///
   /// In en, this message translates to:
-  /// **'Version 1.0.23 — Android app'**
+  /// **'Version 1.0.24 — Android app'**
   String get appVersionLabel;
 
   /// No description provided for @archive.
@@ -3754,6 +3754,42 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'On the roster'**
   String get onTheRoster;
+
+  /// No description provided for @backgroundAudioError.
+  ///
+  /// In en, this message translates to:
+  /// **'Background audio error: {error}'**
+  String backgroundAudioError(String error);
+
+  /// No description provided for @backgroundBatteryBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Samsung may stop the music when you close the app. Allow SoundBlast to run without battery restrictions.'**
+  String get backgroundBatteryBody;
+
+  /// No description provided for @backgroundBatteryButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Allow background playback'**
+  String get backgroundBatteryButton;
+
+  /// No description provided for @backgroundBatteryOff.
+  ///
+  /// In en, this message translates to:
+  /// **'Battery optimization: off — the system will not stop background music.'**
+  String get backgroundBatteryOff;
+
+  /// No description provided for @backgroundBatteryOn.
+  ///
+  /// In en, this message translates to:
+  /// **'Battery optimization: on — the system may stop the music when the app closes.'**
+  String get backgroundBatteryOn;
+
+  /// No description provided for @backgroundBatteryTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep playing in the background'**
+  String get backgroundBatteryTitle;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

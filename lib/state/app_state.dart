@@ -4,6 +4,7 @@ import 'dart:io';
 
 import 'package:audio_session/audio_session.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:just_audio_background/just_audio_background.dart';
@@ -176,7 +177,42 @@ class AppState extends ChangeNotifier {
   /// closes. Shown on the About screen so the cause is visible.
   final bool backgroundAudioReady;
 
-  AppState({this.backgroundAudioReady = false}) {
+  /// The init failure reason, when the background service did not start:
+  /// shown on the About screen so the cause is visible instead of a
+  /// silent "unavailable".
+  final String? backgroundAudioError;
+
+  /// Whether the system is ignoring battery optimizations for this app
+  /// (null = not checked yet). Samsung's battery optimization kills the
+  /// background audio service when the app closes — the exemption is
+  /// what keeps the music playing.
+  bool? batteryExemptionGranted;
+
+  static const _nativeChannel =
+      MethodChannel('com.soundblast.app/media_store');
+
+  Future<void> refreshBatteryExemption() async {
+    try {
+      final granted =
+          await _nativeChannel.invokeMethod<bool>('batteryExemptionStatus');
+      batteryExemptionGranted = granted ?? false;
+      notifyListeners();
+    } catch (e) {
+      debugPrint('SoundBlast battery exemption check failed: $e');
+    }
+  }
+
+  Future<void> requestBatteryExemption() async {
+    try {
+      await _nativeChannel.invokeMethod('requestBatteryExemption');
+    } catch (e) {
+      debugPrint('SoundBlast battery exemption request failed: $e');
+    }
+    await refreshBatteryExemption();
+  }
+
+  AppState(
+      {this.backgroundAudioReady = false, this.backgroundAudioError}) {
     trpc.onSessionExpired = handleSessionExpired;
     _initPlayer();
   }
@@ -209,6 +245,7 @@ class AppState extends ChangeNotifier {
 
   Future<void> init() async {
     await trpc.init();
+    unawaited(refreshBatteryExemption());
     final prefs = await SharedPreferences.getInstance();
     onboarded = prefs.getBool('soundblast-onboarded') ?? false;
     final localeRaw = prefs.getString('sb_locale');

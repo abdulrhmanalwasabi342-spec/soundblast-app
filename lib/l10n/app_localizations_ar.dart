@@ -134,7 +134,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get appName => 'SoundBlast';
 
   @override
-  String get appVersionLabel => 'الإصدار 1.0.23 — تطبيق أندرويد';
+  String get appVersionLabel => 'الإصدار 1.0.24 — تطبيق أندرويد';
 
   @override
   String get archive => 'أرشفة';
@@ -1995,4 +1995,25 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get onTheRoster => 'في القائمة';
+
+  @override
+  String backgroundAudioError(String error) => 'خطأ الصوت بالخلفية: $error';
+
+  @override
+  String get backgroundBatteryBody =>
+      'قد يوقف سامسونج الموسيقى عند إغلاق التطبيق. اسمح لساوند بلاست بالعمل بدون قيود البطارية.';
+
+  @override
+  String get backgroundBatteryButton => 'السماح بالتشغيل في الخلفية';
+
+  @override
+  String get backgroundBatteryOff =>
+      'تحسين البطارية: متوقف — لن يوقف النظام موسيقى الخلفية.';
+
+  @override
+  String get backgroundBatteryOn =>
+      'تحسين البطارية: مفعّل — قد يوقف النظام الموسيقى عند إغلاق التطبيق.';
+
+  @override
+  String get backgroundBatteryTitle => 'استمر بالتشغيل في الخلفية';
 }

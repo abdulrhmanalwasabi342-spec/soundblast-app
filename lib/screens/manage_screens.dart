@@ -1419,6 +1419,28 @@ class AboutScreen extends StatelessWidget {
                 : context.l10n.backgroundAudioUnavailable,
             style: const TextStyle(color: SbColors.muted, fontSize: 13),
           ),
+          if (!state.backgroundAudioReady &&
+              state.backgroundAudioError != null) ...[
+            const SizedBox(height: 4),
+            Text(
+              context.l10n.backgroundAudioError(state.backgroundAudioError!),
+              style: const TextStyle(color: SbColors.muted, fontSize: 13),
+            ),
+          ],
+          const SizedBox(height: 16),
+          Text(
+            state.batteryExemptionGranted == true
+                ? context.l10n.backgroundBatteryOff
+                : context.l10n.backgroundBatteryOn,
+            style: const TextStyle(color: SbColors.muted, fontSize: 13),
+          ),
+          if (state.batteryExemptionGranted == false) ...[
+            const SizedBox(height: 8),
+            ElevatedButton(
+              onPressed: () => state.requestBatteryExemption(),
+              child: Text(context.l10n.backgroundBatteryButton),
+            ),
+          ],
         ],
       ),
     );
