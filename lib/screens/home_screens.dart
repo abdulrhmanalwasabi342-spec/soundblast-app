@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
@@ -29,7 +30,7 @@ class _HomeScreenState extends State<HomeScreen> {
   String? _error;
   bool _usedFallback = false;
   bool _showingCache = false;
-  bool _cacheRetryScheduled = false;
+  Timer? _cacheRetryTimer;
 
   @override
   void initState() {
@@ -114,17 +115,30 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  /// One silent retry ~25s after a failed refresh while the cache banner
-  /// is showing: the free server sleeps after 15 idle minutes and takes a
-  /// while to wake, so the first load often fails and the banner would
-  /// otherwise stick until the user pulls to refresh.
+  /// Silent retries while the cache banner is showing: the first one
+  /// ~25s after a failed refresh (the free server sleeps after 15 idle
+  /// minutes and takes a while to wake), then every minute — the banner
+  /// clears by itself the moment the phone reaches the server again.
+  /// The timer stops when the screen goes away.
   void _scheduleCacheRetry() {
-    if (_cacheRetryScheduled) return;
-    _cacheRetryScheduled = true;
-    Future.delayed(const Duration(seconds: 25), () {
-      _cacheRetryScheduled = false;
-      if (mounted && _showingCache) _load();
-    });
+    if (_cacheRetryTimer != null) return;
+    _cacheRetryTimer =
+        Timer(const Duration(seconds: 25), _retryCacheOnce);
+  }
+
+  void _retryCacheOnce() {
+    _cacheRetryTimer = null;
+    if (!mounted) return;
+    if (!_showingCache) return;
+    _load();
+    _cacheRetryTimer =
+        Timer(const Duration(minutes: 1), _retryCacheOnce);
+  }
+
+  @override
+  void dispose() {
+    _cacheRetryTimer?.cancel();
+    super.dispose();
   }
 
   @override
@@ -172,14 +186,26 @@ class _HomeScreenState extends State<HomeScreen> {
                       if (_showingCache)
                         Container(
                           margin: const EdgeInsets.all(16),
-                          padding: const EdgeInsets.all(12),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 4),
                           decoration: BoxDecoration(
                             color: SbColors.surface2,
                             borderRadius: BorderRadius.circular(12),
                           ),
-                          child: Text(
-                            context.l10n.offlineShowingCache,
-                            style: const TextStyle(color: SbColors.muted),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  context.l10n.offlineShowingCache,
+                                  style: const TextStyle(
+                                      color: SbColors.muted),
+                                ),
+                              ),
+                              TextButton(
+                                onPressed: _load,
+                                child: Text(context.l10n.retry),
+                              ),
+                            ],
                           ),
                         ),
                       if (_usedFallback)
@@ -399,8 +425,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 children: [
                   _HeroPrimaryButton(
                     label: top == null
-                        ? 'Explore music'
-                        : "Play today's signal",
+                        ? context.l10n.exploreMusic
+                        : context.l10n.playTodaysSignal,
                     onPressed: top == null
                         ? () => Navigator.of(context).pushNamed('/trending')
                         : () => state.playSong(top, fromQueue: _songs),
@@ -434,7 +460,8 @@ class _HomeScreenState extends State<HomeScreen> {
                           horizontal: 16, vertical: 10),
                     ),
                     child: Text(
-                      'View live analytics · ${formatCount(_summary?.totalPlays ?? 0)} plays / 7d',
+                      context.l10n.viewLiveAnalytics(
+                          formatCount(_summary?.totalPlays ?? 0)),
                       style: const TextStyle(fontSize: 12),
                     ),
                   ),
@@ -447,7 +474,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       size: 14, color: SbColors.accentPink),
                   const SizedBox(width: 6),
                   Text(
-                    '${formatCount(totalLikes)} marks of love from the community',
+                    context.l10n.marksOfLove(formatCount(totalLikes)),
                     style: const TextStyle(
                         color: Colors.white70, fontSize: 12),
                   ),
@@ -940,8 +967,8 @@ class SongActions extends StatelessWidget {
             ListTile(
               leading: const Icon(Icons.download_outlined),
               title: Text(state.downloads.isDownloaded(song.id)
-                  ? 'Downloaded — play offline'
-                  : 'Download for offline'),
+                  ? context.l10n.downloadedPlayOffline
+                  : context.l10n.downloadForOffline),
               subtitle: state.downloads.isDownloaded(song.id)
                   ? Text(state.downloads.find(song.id)!.sizeLabel)
                   : null,
@@ -954,7 +981,8 @@ class SongActions extends StatelessWidget {
                   return;
                 }
                 try {
-                  showSnack(context, 'Downloading ${song.title}…');
+                  showSnack(
+                      context, context.l10n.downloadingSong(song.title));
                   await state.downloads.download(song);
                   if (context.mounted) {
                     showSnack(context,
@@ -1115,7 +1143,7 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
                           icon: Icons.music_off_outlined,
                           title: context.l10n.nothingHere,
                           message:
-                              'No songs match this filter. Try another genre.',
+                              context.l10n.noSongsMatchFilter,
                         )
                       else
                         ..._visible.map((s) => SongTile(

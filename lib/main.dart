@@ -225,9 +225,11 @@ class _AppShellState extends State<AppShell> {
     if (!mounted) return;
     showSnack(
       context,
-      code == 'noAudio'
-          ? context.l10n.songNoAudio
-          : context.l10n.cannotPlaySong,
+      switch (code) {
+        'noAudio' => context.l10n.songNoAudio,
+        'skipped' => context.l10n.skippedUnplayable,
+        _ => context.l10n.cannotPlaySong,
+      },
     );
   }
 
@@ -276,7 +278,7 @@ class _AppShellState extends State<AppShell> {
                   label: context.l10n.navLibrary),
               BottomNavigationBarItem(
                   icon: const Icon(Icons.person),
-                  label: context.l10n.profile),
+                  label: context.l10n.navProfileShort),
             ],
           ),
         ],
@@ -350,7 +352,13 @@ class MiniPlayerBar extends StatelessWidget {
                         horizontal: 12, vertical: 8),
                     child: Row(
                       children: [
-                        CoverImage(url: song.imageUrl, size: 40, radius: 11),
+                        CoverImage(
+                            url: song.id < 0
+                                ? (state.deviceArtForSong(song.id) ??
+                                    song.imageUrl)
+                                : song.imageUrl,
+                            size: 40,
+                            radius: 11),
                         const SizedBox(width: 12),
                         Expanded(
                           child: Column(

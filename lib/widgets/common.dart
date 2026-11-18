@@ -1,7 +1,11 @@
+import 'dart:io';
+
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import '../api/models.dart';
+import '../state/app_state.dart';
 import '../l10n/app_localizations.dart';
 
 /// Shorthand for the current language's strings: `context.l10n.home`.
@@ -234,6 +238,24 @@ class CoverImage extends StatelessWidget {
         child: Icon(fallbackIcon, color: SbColors.muted, size: size * 0.45),
       );
     }
+    // On-device cover art is cached as a local file path, not a URL.
+    if (url!.startsWith('/')) {
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(radius),
+        child: Image.file(
+          File(url!),
+          width: size,
+          height: size,
+          fit: BoxFit.cover,
+          errorBuilder: (_, __, ___) => Container(
+            width: size,
+            height: size,
+            color: SbColors.surface2,
+            child: Icon(fallbackIcon, color: SbColors.muted),
+          ),
+        ),
+      );
+    }
     return ClipRRect(
       borderRadius: BorderRadius.circular(radius),
       child: CachedNetworkImage(
@@ -424,11 +446,15 @@ class SongTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // On-device songs: show the cached album art when the album has any.
+    final artPath = song.id < 0
+        ? context.read<AppState>().deviceArtForSong(song.id)
+        : null;
     return ListTile(
       leading: Stack(
         alignment: Alignment.center,
         children: [
-          CoverImage(url: song.imageUrl),
+          CoverImage(url: artPath ?? song.imageUrl),
           if (onPlay != null)
             Material(
               color: Colors.black45,

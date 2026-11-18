@@ -2,7 +2,7 @@ name: soundblast
 description: "SoundBlast — music streaming platform for Android. Native Flutter client for the SoundBlast website (https://soundblast.onrender.com)."
 publish_to: 'none'
 
-version: 1.0.12+13
+version: 1.0.13+14
 
 environment:
   sdk: ^3.9.2

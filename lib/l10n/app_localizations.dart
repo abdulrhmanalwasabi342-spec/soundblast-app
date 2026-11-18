@@ -1799,6 +1799,12 @@ abstract class AppLocalizations {
   /// **'Playlists'**
   String get navPlaylists;
 
+  /// No description provided for @navProfileShort.
+  ///
+  /// In en, this message translates to:
+  /// **'Profile'**
+  String get navProfileShort;
+
   /// No description provided for @navTrendingSongs.
   ///
   /// In en, this message translates to:
@@ -1900,6 +1906,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No downloads yet. Use ⋮ → Download for offline on any song.'**
   String get noDownloads;
+
+  /// No description provided for @noDownloadsYet.
+  ///
+  /// In en, this message translates to:
+  /// **'No downloads yet. Use ⋮ → Download for offline on any song.'**
+  String get noDownloadsYet;
 
   /// No description provided for @noFavoritesYet.
   ///
@@ -2896,6 +2908,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Skip'**
   String get skip;
+
+  /// No description provided for @skippedUnplayable.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t play this song — skipped to the next one.'**
+  String get skippedUnplayable;
 
   /// No description provided for @songNoAudio.
   ///

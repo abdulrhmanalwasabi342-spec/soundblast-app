@@ -942,6 +942,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get navPlaylists => 'Playlists';
 
   @override
+  String get navProfileShort => 'Profile';
+
+  @override
   String get navTrendingSongs => 'Trending Songs';
 
   @override
@@ -991,6 +994,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get noDownloads => 'No downloads yet. Use ⋮ → Download for offline on any song.';
+
+  @override
+  String get noDownloadsYet => 'No downloads yet. Use ⋮ → Download for offline on any song.';
 
   @override
   String get noFavoritesYet => 'No favorites yet';
@@ -1515,6 +1521,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get skip => 'Skip';
+
+  @override
+  String get skippedUnplayable => 'Couldn\'t play this song — skipped to the next one.';
 
   @override
   String get songNoAudio => 'This song has no audio file.';

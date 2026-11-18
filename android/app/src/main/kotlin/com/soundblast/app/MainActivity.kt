@@ -33,6 +33,18 @@ class MainActivity : FlutterActivity() {
                         result.error("QUERY_FAILED", e.message, null)
                     }
                 }
+                "albumArt" -> {
+                    // Embedded cover for one album, as JPEG/PNG bytes (or
+                    // null when the album has no art). Used for the on-device
+                    // song covers — MediaStore keeps art per album id.
+                    try {
+                        val albumId = (call.argument<Number>("albumId")
+                            ?: 0).toLong()
+                        result.success(albumArt(albumId))
+                    } catch (e: Exception) {
+                        result.success(null)
+                    }
+                }
                 else -> result.notImplemented()
             }
         }
@@ -52,6 +64,7 @@ class MainActivity : FlutterActivity() {
             MediaStore.Audio.Media.ARTIST,
             MediaStore.Audio.Media.ALBUM,
             MediaStore.Audio.Media.COMPOSER,
+            MediaStore.Audio.Media.ALBUM_ID,
             MediaStore.Audio.Media.DURATION,
             MediaStore.Audio.Media.DATA,
             MediaStore.Audio.Media.SIZE,
@@ -76,6 +89,8 @@ class MainActivity : FlutterActivity() {
                 it.getColumnIndexOrThrow(MediaStore.Audio.Media.ALBUM)
             val composerCol =
                 it.getColumnIndexOrThrow(MediaStore.Audio.Media.COMPOSER)
+            val albumIdCol =
+                it.getColumnIndexOrThrow(MediaStore.Audio.Media.ALBUM_ID)
             val durCol =
                 it.getColumnIndexOrThrow(MediaStore.Audio.Media.DURATION)
             val dataCol =
@@ -98,6 +113,7 @@ class MainActivity : FlutterActivity() {
                         "artist" to (it.getString(artistCol) ?: ""),
                         "album" to (it.getString(albumCol) ?: ""),
                         "composer" to (it.getString(composerCol) ?: ""),
+                        "albumId" to it.getLong(albumIdCol),
                         "genre" to (genreByAudioId[id] ?: ""),
                         "durationMs" to it.getLong(durCol),
                         "path" to path,
@@ -108,6 +124,21 @@ class MainActivity : FlutterActivity() {
             }
         }
         return out
+    }
+
+    /// Cover art bytes for one album id, or null when the album has none.
+    /// Reads the album-art content URI straight from the provider.
+    private fun albumArt(albumId: Long): ByteArray? {
+        if (albumId <= 0) return null
+        val artUri = ContentUris.withAppendedId(
+            Uri.parse("content://media/external/audio/albumart"),
+            albumId,
+        )
+        return try {
+            contentResolver.openInputStream(artUri)?.use { it.readBytes() }
+        } catch (e: Exception) {
+            null
+        }
     }
 
     /// Genre per audio id. Genres live in their own MediaStore table, so

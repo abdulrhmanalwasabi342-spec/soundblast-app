@@ -957,6 +957,9 @@ class AppLocalizationsAr extends AppLocalizations {
   String get navPlaylists => 'قوائم التشغيل';
 
   @override
+  String get navProfileShort => 'ملفي';
+
+  @override
   String get navTrendingSongs => 'الأغاني الرائجة';
 
   @override
@@ -1006,6 +1009,9 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get noDownloads => 'لا توجد تنزيلات بعد. استخدم ⋮ ← تنزيل للاستماع بدون نت لأي أغنية.';
+
+  @override
+  String get noDownloadsYet => 'لا توجد تنزيلات بعد. استخدم ⋮ ← تنزيل للاستماع بدون نت على أي أغنية.';
 
   @override
   String get noFavoritesYet => 'لا توجد مفضلة بعد';
@@ -1530,6 +1536,9 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get skip => 'تخطي';
+
+  @override
+  String get skippedUnplayable => 'تعذّر تشغيل هذه الأغنية، تم الانتقال إلى التالية.';
 
   @override
   String get songNoAudio => 'هذه الأغنية بلا ملف صوتي.';

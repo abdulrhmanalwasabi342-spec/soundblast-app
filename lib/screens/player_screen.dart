@@ -99,7 +99,9 @@ class _PlayerScreenState extends State<PlayerScreen> {
             children: [
               Center(
                 child: CoverImage(
-                    url: song.imageUrl,
+                    url: song.id < 0
+                        ? (state.deviceArtForSong(song.id) ?? song.imageUrl)
+                        : song.imageUrl,
                     size: 280,
                     radius: 20,
                     fallbackIcon: Icons.music_note),

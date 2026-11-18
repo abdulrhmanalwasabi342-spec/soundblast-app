@@ -246,6 +246,52 @@ class AppState extends ChangeNotifier {
       deviceSongsLoaded = true;
     }
     notifyListeners();
+    unawaited(_prefetchDeviceArt());
+  }
+
+  /// Cached cover-art file path per on-device song id (negative ids from
+  /// DeviceSong.toSong). The art bytes come from MediaStore per album and
+  /// are saved once under the app documents dir, so list tiles, the mini
+  /// player and the full player all show the real cover instead of the
+  /// generic note icon.
+  final Map<int, String> deviceArtBySongId = {};
+  final Set<int> _artFetchedAlbumIds = {};
+
+  /// Cover-art file path for an on-device song (negative id), or null when
+  /// its album has no art (yet). The prefetch below fills this in the
+  /// background after the library loads.
+  String? deviceArtForSong(int songId) {
+    final deviceId = -1000000 - songId;
+    return deviceArtBySongId[deviceId];
+  }
+
+  Future<void> _prefetchDeviceArt() async {
+    final albumIds = deviceSongs
+        .map((d) => d.albumId)
+        .whereType<int>()
+        .where((id) => id > 0 && !_artFetchedAlbumIds.contains(id))
+        .toSet();
+    if (albumIds.isEmpty) return;
+    try {
+      final dir = await getApplicationDocumentsDirectory();
+      var changed = false;
+      for (final albumId in albumIds) {
+        _artFetchedAlbumIds.add(albumId);
+        final bytes = await deviceLibrary.albumArt(albumId);
+        if (bytes == null || bytes.isEmpty) continue;
+        final file = File('${dir.path}/art-$albumId.jpg');
+        await file.writeAsBytes(bytes);
+        for (final d in deviceSongs) {
+          if (d.albumId == albumId) {
+            deviceArtBySongId[d.id] = file.path;
+          }
+        }
+        changed = true;
+      }
+      if (changed) notifyListeners();
+    } catch (_) {
+      // Cover art is decorative: a failed fetch never breaks the library.
+    }
   }
 
   Future<void> setOnboarded() async {
@@ -430,7 +476,10 @@ class AppState extends ChangeNotifier {
     queueIndex = idx;
     notifyListeners();
     final ok = await _loadQueueAndPlay(idx);
-    if (ok && song.id > 0) unawaited(_recordPlay(song));
+    if (ok && queueIndex >= 0 && queueIndex < queue.length) {
+      final played = queue[queueIndex];
+      if (played.id > 0) unawaited(_recordPlay(played));
+    }
   }
 
   /// Play a downloaded or on-device song (local file) through the same
@@ -469,9 +518,42 @@ class AppState extends ChangeNotifier {
     }
   }
 
+  /// The audio URI for one queue song, or null when it has no audio at all.
+  Uri? _audioUriFor(Song s) {
+    final local = s.localPath ?? '';
+    if (local.isNotEmpty) {
+      // On-device songs pass a content:// URI (scoped storage on
+      // Android 10+); downloaded songs pass an app-private file path.
+      return local.startsWith('content://') ? Uri.parse(local) : Uri.file(local);
+    }
+    if (s.audioUrl.isNotEmpty) return Uri.parse(s.audioUrl);
+    return null;
+  }
+
+  /// MediaItem tag = what the background notification + lock screen show.
+  MediaItem _mediaItemFor(Song s) => MediaItem(
+        id: '${s.id}',
+        album: s.albumName.isNotEmpty ? s.albumName : s.genre,
+        title: s.title,
+        artist: s.artist,
+        duration:
+            s.duration > 0 ? Duration(seconds: s.duration) : null,
+        artUri: (s.imageUrl ?? '').isNotEmpty
+            ? Uri.tryParse(s.imageUrl!)
+            : null,
+      );
+
+  /// True while the player's source is a single song (after the fallback
+  /// below skipped unplayable files). Next/Previous then load the next
+  /// queue song explicitly instead of seeking inside a concatenating
+  /// source that does not exist.
+  bool _queueSourceIsSingle = false;
+
   /// Returns false when nothing could be played, setting [playbackError]
   /// so the shell can tell the user instead of leaving a fake "playing"
-  /// state on screen.
+  /// state on screen. [queueIndex] ends on the song that is actually
+  /// playing (which may be the next playable one when the tapped file
+  /// cannot be opened).
   Future<bool> _loadQueueAndPlay(int startIndex) async {
     final playable = queue
         .where((s) => s.audioUrl.isNotEmpty || (s.localPath ?? '').isNotEmpty)
@@ -481,30 +563,9 @@ class AppState extends ChangeNotifier {
       notifyListeners();
       return false;
     }
-    final sources = playable.map((s) {
-      final local = s.localPath ?? '';
-      final uri = local.isNotEmpty
-          // On-device songs pass a content:// URI (scoped storage on
-          // Android 10+); downloaded songs pass an app-private file path.
-          ? (local.startsWith('content://') ? Uri.parse(local) : Uri.file(local))
-          : Uri.parse(s.audioUrl);
-      return AudioSource.uri(
-        uri,
-        // MediaItem tag = what the background notification + lock screen show.
-        tag: MediaItem(
-          id: '${s.id}',
-          album: s.albumName.isNotEmpty ? s.albumName : s.genre,
-          title: s.title,
-          artist: s.artist,
-          duration: s.duration > 0
-              ? Duration(seconds: s.duration)
-              : null,
-          artUri: (s.imageUrl ?? '').isNotEmpty
-              ? Uri.tryParse(s.imageUrl!)
-              : null,
-        ),
-      );
-    }).toList();
+    final sources = playable
+        .map((s) => AudioSource.uri(_audioUriFor(s)!, tag: _mediaItemFor(s)))
+        .toList();
     final offset = queue.indexWhere(
         (s) => s.audioUrl.isNotEmpty || (s.localPath ?? '').isNotEmpty);
     _playableOffset = offset < 0 ? 0 : offset;
@@ -516,14 +577,51 @@ class AppState extends ChangeNotifier {
         initialPosition: Duration.zero,
       );
       await player.play();
+      _queueSourceIsSingle = false;
     } catch (e) {
-      debugPrint('SoundBlast playback failed: $e');
-      playbackError = 'failed';
-      notifyListeners();
-      return false;
+      // One bad file (unsupported codec, corrupt or moved since the scan)
+      // must not kill the whole tap: try the following songs one by one.
+      debugPrint('SoundBlast playback failed, trying next files: $e');
+      return _playNextPlayable(startIndex);
     }
     notifyListeners();
     return true;
+  }
+
+  /// Try the songs after [fromIndex] (then wrap to the start) as single
+  /// sources until one loads. The first that plays becomes the current
+  /// song; the shell is told the tap was skipped, not failed.
+  Future<bool> _playNextPlayable(int fromIndex) async {
+    final order = <int>[];
+    for (var i = fromIndex + 1; i < queue.length && order.length < 8; i++) {
+      order.add(i);
+    }
+    for (var i = 0; i < fromIndex && order.length < 8; i++) {
+      order.add(i);
+    }
+    for (final idx in order) {
+      final song = queue[idx];
+      final uri = _audioUriFor(song);
+      if (uri == null) continue;
+      try {
+        await player.setAudioSource(
+          AudioSource.uri(uri, tag: _mediaItemFor(song)),
+          initialPosition: Duration.zero,
+        );
+        await player.play();
+        queueIndex = idx;
+        _playableOffset = idx;
+        _queueSourceIsSingle = true;
+        playbackError = 'skipped';
+        notifyListeners();
+        return true;
+      } catch (_) {
+        continue;
+      }
+    }
+    playbackError = 'failed';
+    notifyListeners();
+    return false;
   }
 
   Future<void> _recordPlay(Song song) async {
@@ -535,7 +633,12 @@ class AppState extends ChangeNotifier {
   }
 
   Future<void> playNext() async {
-    if (queueIndex + 1 < queue.length) {
+    if (queueIndex + 1 >= queue.length) return;
+    if (_queueSourceIsSingle) {
+      // No concatenating source to seek inside: load the next song, which
+      // re-tries the full queue and falls back to single again if needed.
+      await _loadQueueAndPlay(queueIndex + 1);
+    } else {
       await player.seekToNext();
     }
   }
@@ -543,6 +646,8 @@ class AppState extends ChangeNotifier {
   Future<void> playPrevious() async {
     if ((player.position.inSeconds) > 3) {
       await player.seek(Duration.zero);
+    } else if (_queueSourceIsSingle) {
+      if (queueIndex > 0) await _loadQueueAndPlay(queueIndex - 1);
     } else {
       await player.seekToPrevious();
     }

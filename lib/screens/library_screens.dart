@@ -366,11 +366,11 @@ class _LibraryScreenState extends State<LibraryScreen>
             title: context.l10n.downloadedTitle,
             subtitle: context.l10n.downloadedSubtitle),
         if (state.downloads.items.isEmpty)
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             child: Text(
-              'No downloads yet. Use ⋮ → Download for offline on any song.',
-              style: TextStyle(color: SbColors.muted),
+              context.l10n.noDownloadsYet,
+              style: const TextStyle(color: SbColors.muted),
             ),
           )
         else

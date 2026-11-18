@@ -40,6 +40,11 @@ class DeviceSong {
   final String? genre;
   final String? composer;
 
+  /// MediaStore album id — the key for the album's embedded cover art
+  /// (fetched lazily through the `albumArt` channel call, never stored in
+  /// the server Song model).
+  final int? albumId;
+
   /// content:// URI for the file — the reliable way to play it under
   /// scoped storage (Android 10+). Falls back to [path] when absent.
   final String? contentUri;
@@ -53,6 +58,7 @@ class DeviceSong {
     required this.album,
     this.genre,
     this.composer,
+    this.albumId,
     this.contentUri,
   });
 
@@ -127,9 +133,25 @@ class DeviceLibrary {
         album: _cleanLabel(m['album']?.toString(), ''),
         genre: _cleanLabel(m['genre']?.toString(), ''),
         composer: _cleanLabel(m['composer']?.toString(), ''),
+        albumId: (m['albumId'] as num?)?.toInt(),
         contentUri: m['contentUri']?.toString(),
       ));
     }
     return songs;
+  }
+
+  /// Embedded cover art for one MediaStore album id, as raw image bytes,
+  /// or null when the album has no art. The caller caches the bytes.
+  Future<Uint8List?> albumArt(int albumId) async {
+    try {
+      final bytes = await _channel.invokeMethod<Uint8List>(
+        'albumArt',
+        {'albumId': albumId},
+      );
+      if (bytes == null || bytes.isEmpty) return null;
+      return bytes;
+    } on PlatformException {
+      return null;
+    }
   }
 }
