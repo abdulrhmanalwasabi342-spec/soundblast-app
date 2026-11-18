@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io' show Platform;
 
+import 'package:cronet_http/cronet_http.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
 
@@ -43,8 +45,32 @@ class TrpcClient {
   final Map<String, String> _cookies = {}; // name -> "name=value"
 
   TrpcClient({http.Client? httpClient, FlutterSecureStorage? storage})
-      : _http = httpClient ?? http.Client(),
+      : _http = httpClient ?? _defaultHttpClient(),
         _storage = storage ?? const FlutterSecureStorage();
+
+  /// The transport for every server call. On Android the app talks through
+  /// Chromium's network stack (Cronet) — the same stack the phone's browser
+  /// uses — because the socket-based client fails on some networks where the
+  /// browser works (DNS / IPv6 handling differ: Dart tries addresses one by
+  /// one, Chromium races them). The cache stays disabled: the app keeps its
+  /// own cached home, and server data must never come back stale. If
+  /// Cronet cannot start (no Play Services on the phone), fall back to the
+  /// plain client silently instead of breaking the app.
+  static http.Client _defaultHttpClient() {
+    if (Platform.isAndroid) {
+      try {
+        final engine = CronetEngine.build(
+          cacheMode: CacheMode.disabled,
+          userAgent: 'SoundBlast',
+        );
+        return CronetClient.fromCronetEngine(engine, closeEngine: true);
+      } catch (_) {
+        // Cronet unavailable — the plain client still works on most
+        // networks, and the offline banner shows the real reason.
+      }
+    }
+    return http.Client();
+  }
 
   Future<void> init() async {
     final raw = await _storage.read(key: _cookieKey);

@@ -522,11 +522,13 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ],
               ),
-              if (top != null) ...[
-                const SizedBox(height: 20),
-                _SignalCard(song: top, onPlay: () =>
-                    state.playSong(top, fromQueue: _songs)),
-              ],
+              const SizedBox(height: 20),
+              _SignalCard(
+                song: top,
+                onPlay: top == null
+                    ? null
+                    : () => state.playSong(top, fromQueue: _songs),
+              ),
             ],
           ),
         ],
@@ -811,112 +813,307 @@ class _HeroPrimaryButton extends StatelessWidget {
 }
 
 /// Featured "Signal" card from the hero (website ClassicHomeHero):
-/// rounded-[2rem], border white/12, bg #151020, pink glow, cover art with
-/// "SoundBlast original" + "Signal" and a glass "now playing" chip.
+/// rounded-[2rem], border white/12, bg #151020, pink glow, the signal
+/// song's cover with a glass "Featured now" chip — and, exactly like the
+/// website when there are no songs yet, the gradient fallback card
+/// ("SoundBlast original" + "Signal") instead of nothing at all. A
+/// rotating pink frame and a "Fresh from <artist>" chip overlap the card,
+/// as on the website.
 class _SignalCard extends StatelessWidget {
-  final Song song;
-  final VoidCallback onPlay;
-  const _SignalCard({required this.song, required this.onPlay});
+  final Song? song;
+  final VoidCallback? onPlay;
+  const _SignalCard({this.song, this.onPlay});
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      height: 260,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(32),
-        border: Border.all(color: Colors.white.withOpacity(0.12)),
-        color: SbColors.surface2,
-        boxShadow: [
-          BoxShadow(
-            color: SbColors.accent.withOpacity(0.25),
-            blurRadius: 60,
-            offset: const Offset(0, 20),
-          ),
-        ],
-      ),
-      clipBehavior: Clip.antiAlias,
-      child: Stack(
-        fit: StackFit.expand,
-        children: [
-          CoverImage(url: song.imageUrl, size: 1000, radius: 0),
-          Container(
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [Colors.black26, Colors.transparent, Colors.black87],
+    final song = this.song;
+    final hasCover =
+        song != null && (song.imageUrl ?? '').isNotEmpty;
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        const Positioned(
+          left: -20,
+          top: -20,
+          right: -20,
+          bottom: -20,
+          child: _RotatingFrame(),
+        ),
+        Container(
+          height: 260,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(32),
+            border: Border.all(color: Colors.white.withOpacity(0.12)),
+            color: SbColors.surface2,
+            boxShadow: [
+              BoxShadow(
+                color: SbColors.accent.withOpacity(0.25),
+                blurRadius: 60,
+                offset: const Offset(0, 20),
               ),
-            ),
+            ],
           ),
-          Padding(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text('SOUNDBLAST ORIGINAL',
-                    style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w600,
-                        letterSpacing: 3.0,
-                        color: Colors.white60)),
-                const SizedBox(height: 8),
-                const DisplayTitle('Signal', fontSize: 32),
-                const Spacer(),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 12, vertical: 10),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(
-                        color: Colors.white.withOpacity(0.10)),
-                    color: Colors.black.withOpacity(0.35),
-                  ),
-                  child: Row(
-                    children: [
-                      Container(
-                        width: 8,
-                        height: 8,
-                        decoration: const BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: SbColors.accentPink,
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Text(context.l10n.nowPlaying,
-                          style: TextStyle(
-                              fontSize: 10,
-                              fontWeight: FontWeight.w600,
-                              letterSpacing: 2.0,
-                              color: Colors.white70)),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(song.title,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                                fontWeight: FontWeight.w600)),
-                      ),
-                      GestureDetector(
-                        onTap: onPlay,
-                        child: Container(
-                          width: 32,
-                          height: 32,
-                          decoration: const BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: Colors.white,
-                          ),
-                          child: const Icon(Icons.play_arrow,
-                              size: 16, color: Color(0xFF130D19)),
-                        ),
-                      ),
+          clipBehavior: Clip.antiAlias,
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              if (hasCover)
+                CoverImage(url: song.imageUrl, size: 1000, radius: 0)
+              else
+                const _SignalFallbackArt(),
+              Container(
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Colors.black26,
+                      Colors.transparent,
+                      Colors.black87
                     ],
                   ),
                 ),
-              ],
+              ),
+              Padding(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (song == null) ...[
+                      const Icon(Icons.waves,
+                          size: 34, color: Colors.white70),
+                      const Spacer(),
+                      Text(context.l10n.signalOriginal.toUpperCase(),
+                          style: const TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              letterSpacing: 3.0,
+                              color: Colors.white60)),
+                      const SizedBox(height: 8),
+                      DisplayTitle(context.l10n.signalTitle, fontSize: 32),
+                      const SizedBox(height: 12),
+                    ] else
+                      const Spacer(),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 10),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                            color: Colors.white.withOpacity(0.10)),
+                        color: Colors.black.withOpacity(0.35),
+                      ),
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 8,
+                            height: 8,
+                            decoration: const BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: SbColors.accentPink,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Text(context.l10n.featuredNow.toUpperCase(),
+                              style: const TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w600,
+                                  letterSpacing: 2.0,
+                                  color: Colors.white70)),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                                song?.title ??
+                                    context.l10n.nextFavouriteWaiting,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                    fontWeight: FontWeight.w600)),
+                          ),
+                          if (onPlay != null)
+                            GestureDetector(
+                              onTap: onPlay,
+                              child: Container(
+                                width: 32,
+                                height: 32,
+                                decoration: const BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: Colors.white,
+                                ),
+                                child: const Icon(Icons.play_arrow,
+                                    size: 16, color: Color(0xFF130D19)),
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+        if (song != null)
+          Positioned(
+            left: 12,
+            bottom: -20,
+            child: Container(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: Colors.white.withOpacity(0.10)),
+                color: const Color(0xFF15111C).withOpacity(0.92),
+                boxShadow: const [
+                  BoxShadow(
+                      color: Colors.black54,
+                      blurRadius: 24,
+                      offset: Offset(0, 10)),
+                ],
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 36,
+                    height: 36,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(12),
+                      color: SbColors.accent,
+                    ),
+                    child: const Icon(Icons.auto_awesome,
+                        size: 17, color: Colors.white),
+                  ),
+                  const SizedBox(width: 10),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(context.l10n.freshFrom.toUpperCase(),
+                          style: const TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w600,
+                              letterSpacing: 2.0,
+                              color: Colors.white54)),
+                      const SizedBox(height: 2),
+                      ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 140),
+                        child: Text(song.artist,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                                fontSize: 12, fontWeight: FontWeight.w600)),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
           ),
-        ],
-      ),
+      ],
+    );
+  }
+}
+
+/// The website's fallback Signal art (no song yet): pink radial glow
+/// top-left, purple radial glow bottom-right, on a dark linear gradient.
+class _SignalFallbackArt extends StatelessWidget {
+  const _SignalFallbackArt();
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [Color(0xFF161226), Color(0xFF050508)],
+            ),
+          ),
+        ),
+        Positioned(
+          left: -50,
+          top: -70,
+          child: Container(
+            width: 230,
+            height: 230,
+            decoration: const BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: RadialGradient(
+                colors: [Color(0xCCEE0FAF), Colors.transparent],
+              ),
+            ),
+          ),
+        ),
+        Positioned(
+          right: -40,
+          bottom: -80,
+          child: Container(
+            width: 210,
+            height: 210,
+            decoration: const BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: RadialGradient(
+                colors: [Color(0xB3734FF4), Colors.transparent],
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// The website hero's frame around the Signal card: a pink/20 border
+/// that slowly rocks ±2° on a 12-second loop. The card itself stays still.
+class _RotatingFrame extends StatefulWidget {
+  const _RotatingFrame();
+
+  @override
+  State<_RotatingFrame> createState() => _RotatingFrameState();
+}
+
+class _RotatingFrameState extends State<_RotatingFrame>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 12),
+    )..repeat();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, _) {
+        final angle =
+            math.sin(_controller.value * 2 * math.pi) * 0.035;
+        return Transform.rotate(
+          angle: angle,
+          child: Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(40),
+              border: Border.all(
+                color: SbColors.accent.withOpacity(0.20),
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 }

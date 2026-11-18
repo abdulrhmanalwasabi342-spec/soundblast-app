@@ -580,6 +580,9 @@ class AppLocalizationsAr extends AppLocalizations {
   String get exploreMusic => 'استكشف الموسيقى';
 
   @override
+  String get featuredNow => 'مميز الآن';
+
+  @override
   String get feedbackCopyrightReport => 'بلاغ حقوق نشر';
 
   @override
@@ -631,6 +634,9 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get following => 'تتابعه';
+
+  @override
+  String get freshFrom => 'جديد من';
 
   @override
   String get gallery => 'المعرض';
@@ -979,6 +985,9 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get next => 'التالي';
+
+  @override
+  String get nextFavouriteWaiting => 'أغنيتك المفضلة القادمة بانتظارك';
 
   @override
   String get noAlbums => 'لا توجد ألبومات بعد';
@@ -1527,6 +1536,12 @@ class AppLocalizationsAr extends AppLocalizations {
   String get signalCardTitle => 'إشارة';
 
   @override
+  String get signalOriginal => 'أصلي من SoundBlast';
+
+  @override
+  String get signalTitle => 'إشارة';
+
+  @override
   String signalsLive(int count) {
     return '$count إشارة مباشرة';
   }
@@ -1580,6 +1595,9 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get soundBlastRoom => 'غرفة ساوند بلاست';
+
+  @override
+  String get soundBlastSelection => 'اختيارات SoundBlast';
 
   @override
   String get soundblastOriginal => 'ساوند بلاست الأصلية';

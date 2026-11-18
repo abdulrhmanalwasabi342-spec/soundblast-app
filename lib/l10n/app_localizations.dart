@@ -1121,6 +1121,12 @@ abstract class AppLocalizations {
   /// **'Explore music'**
   String get exploreMusic;
 
+  /// No description provided for @featuredNow.
+  ///
+  /// In en, this message translates to:
+  /// **'Featured now'**
+  String get featuredNow;
+
   /// No description provided for @feedbackCopyrightReport.
   ///
   /// In en, this message translates to:
@@ -1198,6 +1204,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Following'**
   String get following;
+
+  /// No description provided for @freshFrom.
+  ///
+  /// In en, this message translates to:
+  /// **'Fresh from'**
+  String get freshFrom;
 
   /// No description provided for @gallery.
   ///
@@ -1846,6 +1858,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Next'**
   String get next;
+
+  /// No description provided for @nextFavouriteWaiting.
+  ///
+  /// In en, this message translates to:
+  /// **'Your next favourite is waiting'**
+  String get nextFavouriteWaiting;
 
   /// No description provided for @noAlbums.
   ///
@@ -2891,6 +2909,18 @@ abstract class AppLocalizations {
   /// **'Signal'**
   String get signalCardTitle;
 
+  /// No description provided for @signalOriginal.
+  ///
+  /// In en, this message translates to:
+  /// **'SoundBlast original'**
+  String get signalOriginal;
+
+  /// No description provided for @signalTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Signal'**
+  String get signalTitle;
+
   /// No description provided for @signalsLive.
   ///
   /// In en, this message translates to:
@@ -2968,6 +2998,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'The SoundBlast room'**
   String get soundBlastRoom;
+
+  /// No description provided for @soundBlastSelection.
+  ///
+  /// In en, this message translates to:
+  /// **'SoundBlast selection'**
+  String get soundBlastSelection;
 
   /// No description provided for @soundblastOriginal.
   ///

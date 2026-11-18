@@ -571,6 +571,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get exploreMusic => 'Explore music';
 
   @override
+  String get featuredNow => 'Featured now';
+
+  @override
   String get feedbackCopyrightReport => 'Copyright report';
 
   @override
@@ -619,6 +622,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get following => 'Following';
+
+  @override
+  String get freshFrom => 'Fresh from';
 
   @override
   String get gallery => 'Gallery';
@@ -964,6 +970,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get next => 'Next';
+
+  @override
+  String get nextFavouriteWaiting => 'Your next favourite is waiting';
 
   @override
   String get noAlbums => 'No albums yet';
@@ -1512,6 +1521,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get signalCardTitle => 'Signal';
 
   @override
+  String get signalOriginal => 'SoundBlast original';
+
+  @override
+  String get signalTitle => 'Signal';
+
+  @override
   String signalsLive(int count) {
     return '$count signals live';
   }
@@ -1562,6 +1577,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get soundBlastRoom => 'The SoundBlast room';
+
+  @override
+  String get soundBlastSelection => 'SoundBlast selection';
 
   @override
   String get soundblastOriginal => 'SOUNDBLAST ORIGINAL';
