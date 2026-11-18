@@ -25,7 +25,9 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   HomeSummary? _summary;
   List<Song> _songs = [];
-  List<String> _genres = [];
+  List<Song> _listenAgain = [];
+  List<Song> _likedSongs = [];
+  int? _weeklyPlays;
   bool _loading = true;
   String? _error;
   bool _usedFallback = false;
@@ -89,12 +91,41 @@ class _HomeScreenState extends State<HomeScreen> {
           totalPlays: freshSongs.fold(0, (a, s) => a + s.playCount),
         );
       }
-      final genres = await state.api.genres();
+      // Logged-in-only shelves (Listen Again, Recently Liked) and the
+      // hero's 7-day plays pill: each is best-effort — a failure here
+      // must never fail the whole home load.
+      List<Song> listenAgain = [];
+      List<Song> likedSongs = [];
+      int? weeklyPlays;
+      if (state.user != null) {
+        try {
+          listenAgain = await state.api.listenAgain();
+        } catch (_) {
+          listenAgain = [];
+        }
+        try {
+          likedSongs = await state.api.myLikedSongs();
+        } catch (_) {
+          likedSongs = [];
+        }
+      }
+      try {
+        final stats = await state.api.platformStats(days: 7);
+        final totals = stats['period'] is Map
+            ? (stats['period'] as Map)['totals']
+            : null;
+        final plays = totals is Map ? totals['plays'] : null;
+        weeklyPlays = plays is num ? plays.toInt() : null;
+      } catch (_) {
+        weeklyPlays = null;
+      }
       if (!mounted) return;
       setState(() {
         _summary = summary;
         _songs = freshSongs;
-        _genres = genres;
+        _listenAgain = listenAgain;
+        _likedSongs = likedSongs;
+        _weeklyPlays = weeklyPlays;
         _loading = false;
         _showingCache = false;
         _lastLoadError = null;
@@ -269,101 +300,38 @@ class _HomeScreenState extends State<HomeScreen> {
                           ),
                         ),
                       _hero(context, state),
-                      if ((_summary?.trendingSongs ?? []).isNotEmpty)
-                        _releaseRadar(
-                            context, state, _summary!.trendingSongs),
-                      if (_songs.isNotEmpty)
-                        _songShelf(
+                      // Website home order: listening paths → Listen Again
+                      // → Trending Now → Release Radar → artist feed →
+                      // featured artists → following feed → albums →
+                      // recently liked → favorites → platform pulse.
+                      _listeningPaths(context, state, _summary),
+                      _listenAgainShelf(context, state, _listenAgain),
+                      _trendingShelf(
+                          context, state, _summary?.trendingSongs ?? []),
+                      _releaseRadar(context, state,
+                          _newestFirst(_songs).take(8).toList()),
+                      _artistFeedShelf(
                           context,
                           state,
-                          title: context.l10n.weeklyTop,
-                          subtitle: context.l10n.mostPlayedWeek,
-                          songs: _songs,
-                          onSeeAll: () =>
-                              Navigator.of(context).pushNamed('/trending'),
-                        ),
-                      if (_genres.isNotEmpty) ...[
-                        SectionHeader(title: context.l10n.moodsGenres),
-                        SizedBox(
-                          height: 96,
-                          child: ListView.separated(
-                            scrollDirection: Axis.horizontal,
-                            padding:
-                                const EdgeInsets.symmetric(horizontal: 16),
-                            separatorBuilder: (_, __) =>
-                                const SizedBox(width: 12),
-                            itemCount: _genres.length,
-                            itemBuilder: (ctx, i) {
-                              final g = _genres[i];
-                              return GestureDetector(
-                                onTap: () => Navigator.of(context).pushNamed(
-                                    '/genres/${Uri.encodeComponent(g)}'),
-                                child: Container(
-                                  width: 150,
-                                  padding: const EdgeInsets.all(14),
-                                  decoration: BoxDecoration(
-                                    color: SbColors.surface2,
-                                    borderRadius: BorderRadius.circular(16),
-                                  ),
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    mainAxisAlignment: MainAxisAlignment.end,
-                                    children: [
-                                      const Icon(Icons.music_note,
-                                          color: SbColors.accentPink),
-                                      const SizedBox(height: 8),
-                                      Text(g,
-                                          style: const TextStyle(
-                                              fontWeight: FontWeight.w700,
-                                              fontSize: 16)),
-                                    ],
-                                  ),
-                                ),
-                              );
-                            },
-                          ),
-                        ),
-                      ],
-                      if ((_summary?.artists ?? []).isNotEmpty) ...[
-                        SectionHeader(
-                            title: context.l10n.popularArtists,
-                            subtitle: context.l10n.mostFollowed),
-                        SizedBox(
-                          height: 168,
-                          child: ListView.separated(
-                            scrollDirection: Axis.horizontal,
-                            padding:
-                                const EdgeInsets.symmetric(horizontal: 16),
-                            separatorBuilder: (_, __) =>
-                                const SizedBox(width: 16),
-                            itemCount: _summary!.artists.length,
-                            itemBuilder: (ctx, i) {
-                              final a = _summary!.artists[i];
-                              return ArtistCard(
-                                artist: a,
-                                onTap: () =>
-                                    Navigator.of(context).pushNamed(
-                                  '/artist/${Uri.encodeComponent(a.slug ?? a.stageName)}',
-                                  arguments: a.localUserId,
-                                ),
-                              );
-                            },
-                          ),
-                        ),
-                      ],
-                      if (_songs.isEmpty && _genres.isEmpty)
-                        EmptyState(
-                          icon: Icons.library_music_outlined,
-                          title: context.l10n.noSongsYet,
-                          message:
-                              'The SoundBlast library is empty right now. Artists can publish the first songs from Upload.',
-                          action: ElevatedButton(
-                            onPressed: () => Navigator.of(context)
-                                .pushNamed('/upload'),
-                            child: Text(context.l10n.uploadSong),
-                          ),
-                        ),
+                          _summary?.recentPublicPosts ?? [],
+                          _summary?.artists ?? []),
+                      _featuredArtistsGrid(
+                          context, state, _summary?.artists ?? []),
+                      _followingFeed(
+                          context,
+                          state,
+                          _summary?.recentPublicPosts ?? [],
+                          _summary?.artists ?? []),
+                      _albumsSpotlight(
+                          context, state, _summary?.albums ?? []),
+                      _recentlyLikedShelf(context, state, _likedSongs),
+                      _favoritesShelf(
+                          context,
+                          state,
+                          state.myFavorites,
+                          _summary?.trendingSongs ?? [],
+                          _newestFirst(_songs).take(8).toList()),
+                      _platformPulse(context, state, _summary),
                       const SizedBox(height: 32),
                     ],
                   ),
@@ -381,32 +349,68 @@ class _HomeScreenState extends State<HomeScreen> {
         : (_songs.isNotEmpty ? _songs.first : null);
     final totalLikes =
         _songs.fold(0, (a, s) => a + s.likeCount);
+    final isSignalPlaying =
+        top != null && state.currentSong?.id == top.id && state.isPlaying;
+    final weeklyPlays =
+        _weeklyPlays == null ? '…' : formatCount(_weeklyPlays!);
     return Container(
-      margin: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: SbColors.background,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: Colors.white.withOpacity(0.06)),
+        border: Border(
+          bottom: BorderSide(color: Colors.white.withOpacity(0.06)),
+        ),
       ),
       child: Stack(
         children: [
           _DriftingBlob(
-            left: -60,
-            top: -40,
-            size: 220,
+            left: -112,
+            top: 48,
+            size: 288,
             color: SbColors.accent,
             duration: const Duration(seconds: 18),
           ),
           _DriftingBlob(
-            right: -50,
-            bottom: -60,
-            size: 200,
+            right: -96,
+            bottom: 0,
+            size: 320,
             color: SbColors.purpleDeep,
             duration: const Duration(seconds: 20),
             phase: 0.4,
           ),
-          Column(
+          // 120° scrim over the glows, like the website.
+          Container(
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                stops: [0, 0.46, 1],
+                colors: [
+                  Color(0xFA050508),
+                  Color(0xD6050508),
+                  Color(0x99050508),
+                ],
+              ),
+            ),
+          ),
+          // Bottom fade into the page background.
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 0,
+            height: 144,
+            child: Container(
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [Colors.transparent, SbColors.background],
+                ),
+              ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 32, 16, 36),
+            child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
@@ -443,11 +447,13 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ],
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 20),
               const Eyebrow('The SoundBlast room'),
-              const SizedBox(height: 12),
-              const DisplayTitle('Find the sound', fontSize: 40),
-              const DisplayTitle('that stays with', fontSize: 40),
+              const SizedBox(height: 16),
+              const DisplayTitle('Find the sound',
+                  fontSize: 52, height: 0.9, letterSpacing: -3.9),
+              const DisplayTitle('that stays with',
+                  fontSize: 52, height: 0.9, letterSpacing: -3.9),
               ShaderMask(
                 shaderCallback: (bounds) =>
                     const LinearGradient(
@@ -457,17 +463,19 @@ class _HomeScreenState extends State<HomeScreen> {
                     SbColors.purpleLight,
                   ],
                 ).createShader(bounds),
-                child: const DisplayTitle('you.', fontSize: 40),
-              ),
-              const SizedBox(height: 14),
-              const Text(
-                'A focused home for releases, artist stories, and the tracks worth replaying. Built around the people making the music.',
-                style: TextStyle(color: Colors.white70, fontSize: 15),
+                child: const DisplayTitle('you.',
+                    fontSize: 52, height: 0.9, letterSpacing: -3.9),
               ),
               const SizedBox(height: 20),
+              Text(
+                context.l10n.heroSubtitle,
+                style: const TextStyle(
+                    color: Colors.white70, fontSize: 15, height: 1.6),
+              ),
+              const SizedBox(height: 28),
               Wrap(
-                spacing: 10,
-                runSpacing: 10,
+                spacing: 12,
+                runSpacing: 12,
                 children: [
                   _HeroPrimaryButton(
                     label: top == null
@@ -505,89 +513,65 @@ class _HomeScreenState extends State<HomeScreen> {
                       padding: const EdgeInsets.symmetric(
                           horizontal: 16, vertical: 10),
                     ),
-                    child: Text(
-                      context.l10n.viewLiveAnalytics(
-                          formatCount(_summary?.totalPlays ?? 0)),
-                      style: const TextStyle(fontSize: 12),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.auto_awesome,
+                            size: 13, color: SbColors.accentPink),
+                        const SizedBox(width: 6),
+                        Text(
+                          context.l10n.viewLiveAnalytics(weeklyPlays),
+                          style: const TextStyle(fontSize: 12),
+                        ),
+                      ],
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 16),
-              Row(
-                children: [
-                  const Icon(Icons.favorite,
-                      size: 14, color: SbColors.accentPink),
-                  const SizedBox(width: 6),
-                  Text(
-                    context.l10n.marksOfLove(formatCount(totalLikes)),
-                    style: const TextStyle(
-                        color: Colors.white70, fontSize: 12),
+              const SizedBox(height: 32),
+              _LikesRow(songs: _songs, totalLikes: totalLikes),
+              const SizedBox(height: 28),
+              Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 368),
+                  child: AspectRatio(
+                    aspectRatio: 0.92,
+                    child: _SignalCard(
+                      song: top,
+                      onPlay: top == null
+                          ? null
+                          : () => state.playSong(top, fromQueue: _songs),
+                      isPlaying: isSignalPlaying,
+                    ),
                   ),
-                ],
+                ),
               ),
-              const SizedBox(height: 20),
-              _SignalCard(
-                song: top,
-                onPlay: top == null
-                    ? null
-                    : () => state.playSong(top, fromQueue: _songs),
-              ),
+              // Room for the "Fresh from" chip, which hangs below the card.
+              const SizedBox(height: 28),
             ],
+          ),
           ),
         ],
       ),
     );
   }
 
-  Widget _songShelf(BuildContext context, AppState state,
-      {required String title,
-      String? subtitle,
-      required List<Song> songs,
-      VoidCallback? onSeeAll}) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        SectionHeader(title: title, subtitle: subtitle, onSeeAll: onSeeAll),
-        ...songs.map((s) => SongTile(
-              song: s,
-              onTap: () => Navigator.of(context).pushNamed('/player'),
-              onPlay: () => state.playSong(s, fromQueue: songs),
-              trailing: SongActions(song: s),
-            )),
-      ],
-    );
-  }
-
   /// Release radar — the website's featured grid: 2-column cards,
   /// rounded-[1.45rem], square cover with black gradient, white circular
-  /// play button, pink heart top-left when liked.
+  /// play button, pink heart top-left when liked. Data is the newest
+  /// uploads (the website's newReleaseSongs + weeklyTopSongs), not the
+  /// trending chart.
   Widget _releaseRadar(BuildContext context, AppState state, List<Song> songs) {
+    if (songs.isEmpty) return const SizedBox.shrink();
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 20, 16, 10),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Eyebrow('New in the room'),
-              const SizedBox(height: 8),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const DisplayTitle('Release radar', fontSize: 30),
-                  GestureDetector(
-                    onTap: () =>
-                        Navigator.of(context).pushNamed('/albums'),
-                    child: Text(context.l10n.browseReleases,
-                        style: TextStyle(
-                            color: Colors.white60, fontSize: 13)),
-                  ),
-                ],
-              ),
-            ],
-          ),
+        _HomeSectionHeader(
+          eyebrow: context.l10n.newInRoom,
+          eyebrowIcon: Icons.auto_awesome,
+          title: context.l10n.releaseRadar,
+          linkLabel: context.l10n.browseReleases,
+          onLink: () => Navigator.of(context).pushNamed('/albums'),
         ),
         GridView.builder(
           shrinkWrap: true,
@@ -828,7 +812,8 @@ class _HeroPrimaryButton extends StatelessWidget {
 class _SignalCard extends StatelessWidget {
   final Song? song;
   final VoidCallback? onPlay;
-  const _SignalCard({this.song, this.onPlay});
+  final bool isPlaying;
+  const _SignalCard({this.song, this.onPlay, this.isPlaying = false});
 
   @override
   Widget build(BuildContext context) {
@@ -846,7 +831,6 @@ class _SignalCard extends StatelessWidget {
           child: _RotatingFrame(),
         ),
         Container(
-          height: 260,
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(32),
             border: Border.all(color: Colors.white.withOpacity(0.12)),
@@ -880,6 +864,14 @@ class _SignalCard extends StatelessWidget {
                   ),
                 ),
               ),
+              // Playing indicator (website): spinning disc + equalizer
+              // bars, top-right, only while the signal song is playing.
+              if (isPlaying)
+                const Positioned(
+                  right: 12,
+                  top: 12,
+                  child: _PlayingChip(),
+                ),
               Padding(
                 padding: const EdgeInsets.all(20),
                 child: Column(
@@ -1614,6 +1606,1790 @@ class _DriftingBlobState extends State<_DriftingBlob>
           ),
         );
       },
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Home sections rebuilt to match the website (2026-11-18). Every section
+// renders only live data and returns nothing when empty, exactly like the
+// website's shelves (which return null when empty).
+// ---------------------------------------------------------------------------
+
+/// Newest uploads first (the server returns oldest first). Used by the
+/// Release Radar and the Favorites community picks.
+List<Song> _newestFirst(List<Song> songs) {
+  final list = [...songs];
+  list.sort((a, b) {
+    final da = DateTime.tryParse(a.createdAt ?? '');
+    final db = DateTime.tryParse(b.createdAt ?? '');
+    final epoch = DateTime.fromMillisecondsSinceEpoch(0);
+    final cmp = (db ?? epoch).compareTo(da ?? epoch);
+    if (cmp != 0) return cmp;
+    return b.id.compareTo(a.id);
+  });
+  return list;
+}
+
+/// Short date for post cards (yyyy-MM-dd): the app has no month names
+/// localized, and a numeric date is unambiguous in both languages.
+String _shortDate(String? iso) {
+  final d = DateTime.tryParse(iso ?? '');
+  if (d == null) return '';
+  String two(int n) => n.toString().padLeft(2, '0');
+  return '${d.year}-${two(d.month)}-${two(d.day)}';
+}
+
+/// Like-toggle shared by the new home cards (trending, recently liked,
+/// favorites rows): guests get the login prompt, failures show the
+/// friendly error, and the optimistic AppState update stays.
+Future<void> _toggleLikeHome(
+    BuildContext context, AppState state, Song song) async {
+  if (state.user == null) {
+    showSnack(context, context.l10n.loginToLike);
+    return;
+  }
+  try {
+    await state.toggleLike(song);
+  } catch (e) {
+    if (context.mounted) {
+      showSnack(context, friendlyError(e, context.l10n));
+    }
+  }
+}
+
+Future<void> _toggleFavoriteHome(
+    BuildContext context, AppState state, Song song) async {
+  if (state.user == null) {
+    showSnack(context, context.l10n.loginToSaveFavorites);
+    return;
+  }
+  try {
+    await state.toggleFavorite(song);
+  } catch (e) {
+    if (context.mounted) {
+      showSnack(context, friendlyError(e, context.l10n));
+    }
+  }
+}
+
+/// Section header matching the website's shelves: small eyebrow (gold by
+/// default, blue for Listen Again) with an optional icon, Playfair title,
+/// and an optional right-hand link or trailing widget.
+class _HomeSectionHeader extends StatelessWidget {
+  final String eyebrow;
+  final IconData? eyebrowIcon;
+  final Color eyebrowColor;
+  final String title;
+  final String? linkLabel;
+  final VoidCallback? onLink;
+  final Widget? trailing;
+  const _HomeSectionHeader({
+    required this.eyebrow,
+    this.eyebrowIcon,
+    this.eyebrowColor = SbColors.gold,
+    required this.title,
+    this.linkLabel,
+    this.onLink,
+    this.trailing,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 24, 16, 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              if (eyebrowIcon != null) ...[
+                Icon(eyebrowIcon, size: 13, color: eyebrowColor),
+                const SizedBox(width: 6),
+              ],
+              Text(
+                eyebrow.toUpperCase(),
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 3.0,
+                  color: eyebrowColor,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Expanded(
+                child: DisplayTitle(title, fontSize: 24),
+              ),
+              if (trailing != null) trailing!,
+              if (linkLabel != null)
+                GestureDetector(
+                  onTap: onLink,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(linkLabel!,
+                          style: const TextStyle(
+                              color: Colors.white60, fontSize: 13)),
+                      const SizedBox(width: 4),
+                      const Text('→',
+                          style:
+                              TextStyle(color: Colors.white60, fontSize: 13)),
+                    ],
+                  ),
+                ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// The hero's likes row: up to 3 overlapping cover circles, then
+/// "**N** marks of love from the community" (website ClassicHomeHero).
+class _LikesRow extends StatelessWidget {
+  final List<Song> songs;
+  final int totalLikes;
+  const _LikesRow({required this.songs, required this.totalLikes});
+
+  @override
+  Widget build(BuildContext context) {
+    final covers = songs
+        .where((s) => (s.imageUrl ?? '').isNotEmpty)
+        .take(3)
+        .toList();
+    return Row(
+      children: [
+        if (covers.isNotEmpty) ...[
+          SizedBox(
+            width: 32 + (covers.length - 1) * 20.0,
+            height: 32,
+            child: Stack(
+              children: [
+                for (var i = 0; i < covers.length; i++)
+                  Positioned(
+                    left: i * 20.0,
+                    child: Container(
+                      width: 32,
+                      height: 32,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                            color: const Color(0xFF08070D), width: 2),
+                      ),
+                      child: ClipOval(
+                        child: CoverImage(
+                            url: covers[i].imageUrl,
+                            size: 32,
+                            radius: 0,
+                            fallbackIcon: Icons.music_note),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 12),
+        ],
+        Expanded(
+          child: Text(
+            context.l10n.marksOfLove(formatCount(totalLikes)),
+            style: const TextStyle(color: Colors.white70, fontSize: 12),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// The website's three listening-path cards (HomeListeningPaths): the
+/// chart, the artist roster, the release library — stacked on phones,
+/// each with its tone, icon, Playfair title and an "Open ↗" link.
+Widget _listeningPaths(
+    BuildContext context, AppState state, HomeSummary? summary) {
+  final l10n = context.l10n;
+  final cards = [
+    _PathCardData(
+      eyebrow: l10n.pathsChart,
+      title: l10n.pathsMoveMoment,
+      detail:
+          l10n.pathsTracksRotation((summary?.trendingSongs ?? []).length),
+      icon: Icons.workspace_premium,
+      tone: SbColors.accent,
+      onTap: () => Navigator.of(context).pushNamed('/trending'),
+    ),
+    _PathCardData(
+      eyebrow: l10n.pathsArtistRoster,
+      title: l10n.pathsStepInside,
+      detail: l10n.pathsVoicesFollow((summary?.artists ?? []).length),
+      icon: Icons.auto_awesome,
+      tone: SbColors.gold,
+      onTap: () => Navigator.of(context).pushNamed('/artists'),
+    ),
+    _PathCardData(
+      eyebrow: l10n.pathsReleaseLibrary,
+      title: l10n.pathsListenChapters,
+      detail: l10n.pathsReleasesWaiting((summary?.albums ?? []).length),
+      icon: Icons.album,
+      tone: const Color(0xFF5489FF),
+      onTap: () => Navigator.of(context).pushNamed('/albums'),
+    ),
+  ];
+  return Padding(
+    padding: const EdgeInsets.fromLTRB(16, 24, 16, 0),
+    child: Column(
+      children: [
+        for (var i = 0; i < cards.length; i++) ...[
+          if (i > 0) const SizedBox(height: 12),
+          _PathCard(data: cards[i], openLabel: l10n.pathsOpen),
+        ],
+      ],
+    ),
+  );
+}
+
+class _PathCardData {
+  final String eyebrow;
+  final String title;
+  final String detail;
+  final IconData icon;
+  final Color tone;
+  final VoidCallback onTap;
+  const _PathCardData({
+    required this.eyebrow,
+    required this.title,
+    required this.detail,
+    required this.icon,
+    required this.tone,
+    required this.onTap,
+  });
+}
+
+class _PathCard extends StatelessWidget {
+  final _PathCardData data;
+  final String openLabel;
+  const _PathCard({required this.data, required this.openLabel});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: data.onTap,
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(color: Colors.white.withOpacity(0.09)),
+          color: const Color(0xFF0D0C12),
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: Stack(
+          children: [
+            Positioned.fill(
+              child: Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      data.tone.withOpacity(0.24),
+                      data.tone.withOpacity(0.10),
+                      Colors.transparent,
+                    ],
+                    stops: const [0, 0.45, 1],
+                  ),
+                ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(18),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          data.eyebrow.toUpperCase(),
+                          style: const TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w600,
+                            letterSpacing: 2.2,
+                            color: Colors.white54,
+                          ),
+                        ),
+                      ),
+                      Container(
+                        width: 32,
+                        height: 32,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                              color: Colors.white.withOpacity(0.10)),
+                          color: Colors.white.withOpacity(0.05),
+                        ),
+                        child: Icon(data.icon,
+                            size: 15, color: Colors.white.withOpacity(0.9)),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+                  DisplayTitle(data.title, fontSize: 20),
+                  const SizedBox(height: 8),
+                  Text(data.detail,
+                      style: const TextStyle(
+                          color: Colors.white54, fontSize: 12)),
+                  const SizedBox(height: 16),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(openLabel,
+                          style: const TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.white70)),
+                      const SizedBox(width: 4),
+                      const Text('↗',
+                          style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: Color(0xFFFF70C9))),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Listen Again (website, logged-in only): the dashed empty-state card
+/// when nothing was played yet, otherwise a horizontal rail of 148px
+/// cards with a white play button on the cover.
+Widget _listenAgainShelf(
+    BuildContext context, AppState state, List<Song> songs) {
+  if (state.user == null) return const SizedBox.shrink();
+  final l10n = context.l10n;
+  return Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      _HomeSectionHeader(
+        eyebrow: l10n.recentPlays,
+        eyebrowIcon: Icons.album,
+        eyebrowColor: const Color(0xFF9BB8FF),
+        title: l10n.listenAgain,
+        trailing: songs.isNotEmpty
+            ? Text(l10n.privateAccount,
+                style: const TextStyle(color: Colors.white38, fontSize: 12))
+            : null,
+      ),
+      if (songs.isEmpty)
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+          child: Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(color: Colors.white.withOpacity(0.13)),
+              color: Colors.white.withOpacity(0.025),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(l10n.lastPlaysEmpty,
+                    style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 14)),
+                const SizedBox(height: 6),
+                Text(l10n.lastPlaysHint,
+                    style: const TextStyle(
+                        color: Colors.white54, fontSize: 13, height: 1.5)),
+                const SizedBox(height: 12),
+                GestureDetector(
+                  onTap: () =>
+                      Navigator.of(context).pushNamed('/trending'),
+                  child: Text('${l10n.exploreMoving} →',
+                      style: const TextStyle(
+                          color: Color(0xFF9BB8FF),
+                          fontWeight: FontWeight.w600,
+                          fontSize: 13)),
+                ),
+              ],
+            ),
+          ),
+        )
+      else
+        SizedBox(
+          height: 232,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            separatorBuilder: (_, __) => const SizedBox(width: 12),
+            itemCount: songs.length,
+            itemBuilder: (ctx, i) => _ListenAgainCard(
+                song: songs[i], queue: songs, state: state),
+          ),
+        ),
+    ],
+  );
+}
+
+class _ListenAgainCard extends StatelessWidget {
+  final Song song;
+  final List<Song> queue;
+  final AppState state;
+  const _ListenAgainCard(
+      {required this.song, required this.queue, required this.state});
+
+  @override
+  Widget build(BuildContext context) {
+    final isCurrent = state.currentSong?.id == song.id;
+    return SizedBox(
+      width: 148,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Stack(
+            children: [
+              Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(22),
+                  border: Border.all(color: Colors.white.withOpacity(0.07)),
+                  color: Colors.white.withOpacity(0.03),
+                ),
+                clipBehavior: Clip.antiAlias,
+                child: CoverImage(
+                    url: song.imageUrl,
+                    size: 148,
+                    radius: 22,
+                    fallbackIcon: Icons.music_note),
+              ),
+              Positioned(
+                right: 10,
+                bottom: 10,
+                child: GestureDetector(
+                  onTap: () => state.playSong(song, fromQueue: queue),
+                  child: Container(
+                    width: 40,
+                    height: 40,
+                    decoration: const BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: Colors.white,
+                      boxShadow: [
+                        BoxShadow(color: Colors.black45, blurRadius: 12)
+                      ],
+                    ),
+                    child: Icon(
+                      isCurrent && state.isPlaying
+                          ? Icons.pause
+                          : Icons.play_arrow,
+                      color: const Color(0xFF130D19),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          GestureDetector(
+            onTap: () => state.playSong(song, fromQueue: queue),
+            child: Text(song.title,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                    fontWeight: FontWeight.w600, fontSize: 14)),
+          ),
+          GestureDetector(
+            onTap: () => Navigator.of(context).pushNamed(
+                '/artist/${Uri.encodeComponent(song.artist)}'),
+            child: Text(song.artist,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(color: Colors.white54, fontSize: 12)),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Trending Now (website): horizontal rail of 160px cards with a rank
+/// chip, a glass play button, a heart below the cover, and plays · likes.
+Widget _trendingShelf(
+    BuildContext context, AppState state, List<Song> songs) {
+  if (songs.isEmpty) return const SizedBox.shrink();
+  final l10n = context.l10n;
+  return Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      _HomeSectionHeader(
+        eyebrow: l10n.trendingNow,
+        eyebrowIcon: Icons.trending_up,
+        title: l10n.onEveryoneEars,
+        linkLabel: l10n.seeTheChart,
+        onLink: () => Navigator.of(context).pushNamed('/trending'),
+      ),
+      SizedBox(
+        height: 252,
+        child: ListView.separated(
+          scrollDirection: Axis.horizontal,
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          separatorBuilder: (_, __) => const SizedBox(width: 16),
+          itemCount: songs.length,
+          itemBuilder: (ctx, i) => _TrendingCard(
+              song: songs[i], rank: i + 1, queue: songs, state: state),
+        ),
+      ),
+    ],
+  );
+}
+
+class _TrendingCard extends StatelessWidget {
+  final Song song;
+  final int rank;
+  final List<Song> queue;
+  final AppState state;
+  const _TrendingCard(
+      {required this.song,
+      required this.rank,
+      required this.queue,
+      required this.state});
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final liked = state.isLiked(song.id);
+    final isCurrent = state.currentSong?.id == song.id;
+    return SizedBox(
+      width: 160,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Stack(
+            children: [
+              Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: Colors.white.withOpacity(0.07)),
+                  color: Colors.white.withOpacity(0.03),
+                ),
+                clipBehavior: Clip.antiAlias,
+                child: CoverImage(
+                    url: song.imageUrl,
+                    size: 160,
+                    radius: 16,
+                    fallbackIcon: Icons.music_note),
+              ),
+              Positioned(
+                left: 10,
+                top: 10,
+                child: Container(
+                  width: 28,
+                  height: 28,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Colors.black.withOpacity(0.55),
+                  ),
+                  child: Text('$rank',
+                      style: const TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w800,
+                          color: Colors.white)),
+                ),
+              ),
+              Positioned(
+                right: 10,
+                top: 10,
+                child: GestureDetector(
+                  onTap: () => state.playSong(song, fromQueue: queue),
+                  child: Container(
+                    width: 32,
+                    height: 32,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: Colors.white.withOpacity(0.12),
+                    ),
+                    child: Icon(
+                      isCurrent && state.isPlaying
+                          ? Icons.pause
+                          : Icons.play_arrow,
+                      size: 16,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              ),
+              if (isCurrent)
+                Positioned(
+                  left: 10,
+                  bottom: 10,
+                  child: Container(
+                    width: 32,
+                    height: 32,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: SbColors.accent.withOpacity(0.9),
+                    ),
+                    child: const Icon(Icons.album,
+                        size: 15, color: Colors.white),
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          GestureDetector(
+            onTap: () => _toggleLikeHome(context, state, song),
+            child: Container(
+              width: 28,
+              height: 28,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(
+                    color: liked
+                        ? SbColors.accent.withOpacity(0.45)
+                        : Colors.white.withOpacity(0.12)),
+                color: liked
+                    ? SbColors.accent.withOpacity(0.18)
+                    : Colors.transparent,
+              ),
+              child: Icon(
+                liked ? Icons.favorite : Icons.favorite_border,
+                size: 14,
+                color: liked ? SbColors.accentPink : Colors.white70,
+              ),
+            ),
+          ),
+          const SizedBox(height: 6),
+          GestureDetector(
+            onTap: () => state.playSong(song, fromQueue: queue),
+            child: Text(song.title,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                    fontWeight: FontWeight.w600, fontSize: 14)),
+          ),
+          GestureDetector(
+            onTap: () => Navigator.of(context).pushNamed(
+                '/artist/${Uri.encodeComponent(song.artist)}'),
+            child: Text(song.artist,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(color: Colors.white54, fontSize: 12)),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            l10n.playsCount(formatCount(song.playCount)) +
+                (song.likeCount > 0
+                    ? ' • ${l10n.likesCount(formatCount(song.likeCount))}'
+                    : ''),
+            style: const TextStyle(color: Colors.white38, fontSize: 11),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Artist avatar: the artist's photo in a circle, or a gradient circle
+/// with the stage name's initial when there is no photo.
+Widget _artistAvatar(
+    {String? imageUrl, required String name, required double size}) {
+  final initial = name.trim().isEmpty ? '؟' : name.trim()[0].toUpperCase();
+  if ((imageUrl ?? '').isEmpty) {
+    return Container(
+      width: size,
+      height: size,
+      decoration: const BoxDecoration(
+        shape: BoxShape.circle,
+        gradient:
+            LinearGradient(colors: [SbColors.accent, SbColors.purple]),
+      ),
+      alignment: Alignment.center,
+      child: Text(initial,
+          style: TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.w800,
+              fontSize: size * 0.36)),
+    );
+  }
+  return ClipOval(
+    child: CoverImage(
+        url: imageUrl, size: size, radius: 0, fallbackIcon: Icons.person),
+  );
+}
+
+/// Follow button shared by the artist feed, the featured-artists grid
+/// and the following feed: loads the current state once (logged-in only),
+/// hides itself for guests, on your own artist page, and on load failure
+/// — never a wrong state. Mirrors the browse screens' follow pattern.
+class _FollowButton extends StatefulWidget {
+  final int artistLocalUserId;
+  final bool expanded;
+  const _FollowButton(
+      {required this.artistLocalUserId, this.expanded = false});
+
+  @override
+  State<_FollowButton> createState() => _FollowButtonState();
+}
+
+class _FollowButtonState extends State<_FollowButton> {
+  bool? _following;
+  bool _busy = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    final state = context.read<AppState>();
+    if (state.user == null) return;
+    if (widget.artistLocalUserId.toString() == state.user!.id) return;
+    try {
+      final info = await state.api.followers(widget.artistLocalUserId);
+      if (!mounted) return;
+      setState(() => _following = info['following'] == true);
+    } catch (_) {
+      // Stay hidden rather than show a wrong state.
+    }
+  }
+
+  Future<void> _toggle() async {
+    if (_busy || _following == null) return;
+    final state = context.read<AppState>();
+    final was = _following!;
+    setState(() {
+      _busy = true;
+      _following = !was;
+    });
+    try {
+      if (was) {
+        await state.api.unfollowArtist(widget.artistLocalUserId);
+      } else {
+        await state.api.followArtist(widget.artistLocalUserId);
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _following = was);
+        showSnack(context, friendlyError(e, context.l10n));
+      }
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_following == null) return const SizedBox.shrink();
+    final l10n = context.l10n;
+    final button = Container(
+      alignment: Alignment.center,
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(999),
+        gradient: _following!
+            ? null
+            : const LinearGradient(
+                colors: [SbColors.accent, SbColors.purple]),
+        color: _following! ? Colors.white.withOpacity(0.10) : null,
+      ),
+      child: Text(
+        _following! ? l10n.following : l10n.follow,
+        style: const TextStyle(
+            fontSize: 12, fontWeight: FontWeight.w600, color: Colors.white),
+      ),
+    );
+    final tapped = GestureDetector(onTap: _toggle, child: button);
+    if (!widget.expanded) return tapped;
+    return SizedBox(width: double.infinity, child: tapped);
+  }
+}
+
+/// Artist Voice (website SharedShelves): horizontal rail of post cards
+/// on a #0a0a12 band with a pink hairline — avatar, name, kind chip,
+/// Follow button, body, date, "View artist profile" link. No post
+/// engagement controls: the app has no post-engagement API.
+Widget _artistFeedShelf(BuildContext context, AppState state,
+    List<ArtistPost> posts, List<ArtistProfile> artists) {
+  if (posts.isEmpty) return const SizedBox.shrink();
+  final l10n = context.l10n;
+  final cardWidth =
+      math.min(336.0, MediaQuery.of(context).size.width * 0.82);
+  return Container(
+    color: const Color(0xFF0A0A12),
+    padding: const EdgeInsets.only(bottom: 24),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          height: 1,
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(colors: [
+              Colors.transparent,
+              Color(0x40EE0FAF),
+              Colors.transparent,
+            ]),
+          ),
+        ),
+        _HomeSectionHeader(
+          eyebrow: l10n.artistVoice,
+          title: l10n.straightFromArtists,
+          linkLabel: l10n.seeAllPosts,
+          onLink: () => Navigator.of(context).pushNamed('/artist-posts'),
+        ),
+        SizedBox(
+          height: 210,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            separatorBuilder: (_, __) => const SizedBox(width: 12),
+            itemCount: posts.length,
+            itemBuilder: (ctx, i) {
+              final p = posts[i];
+              ArtistProfile? artist;
+              for (final a in artists) {
+                if (a.localUserId == p.artistLocalUserId) {
+                  artist = a;
+                  break;
+                }
+              }
+              return _PostCard(
+                  post: p,
+                  width: cardWidth,
+                  artistImageUrl: artist?.imageUrl);
+            },
+          ),
+        ),
+      ],
+    ),
+  );
+}
+
+class _PostCard extends StatelessWidget {
+  final ArtistPost post;
+  final double width;
+  final String? artistImageUrl;
+  const _PostCard(
+      {required this.post, required this.width, this.artistImageUrl});
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final name = post.stageName ?? '';
+    final isRecommendation = post.kind == 'recommendation';
+    final kindLabel = isRecommendation
+        ? l10n.postKindRecommendation
+        : post.kind == 'post'
+            ? l10n.postKindPost
+            : post.kind;
+    final date = _shortDate(post.createdAt);
+    return Container(
+      width: width,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: Colors.white.withOpacity(0.10)),
+        color: Colors.white.withOpacity(0.04),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              _artistAvatar(
+                  imageUrl: artistImageUrl, name: name, size: 44),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                            fontWeight: FontWeight.w700, fontSize: 14)),
+                    const SizedBox(height: 4),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 3),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(999),
+                        border: Border.all(
+                            color: (isRecommendation
+                                    ? SbColors.gold
+                                    : SbColors.accent)
+                                .withOpacity(0.5)),
+                      ),
+                      child: Text(kindLabel,
+                          style: TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w600,
+                              color: isRecommendation
+                                  ? SbColors.gold
+                                  : SbColors.accentPink)),
+                    ),
+                  ],
+                ),
+              ),
+              _FollowButton(artistLocalUserId: post.artistLocalUserId),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Expanded(
+            child: Text(post.body,
+                maxLines: 4,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                    color: Colors.white, fontSize: 14, height: 1.5)),
+          ),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              if (date.isNotEmpty)
+                Text(date,
+                    style:
+                        const TextStyle(color: Colors.white38, fontSize: 12)),
+              const Spacer(),
+              GestureDetector(
+                onTap: () => Navigator.of(context).pushNamed(
+                    '/artist/${Uri.encodeComponent(name)}',
+                    arguments: post.artistLocalUserId),
+                child: Text(l10n.viewArtistProfile,
+                    style: const TextStyle(
+                        color: Colors.white70, fontSize: 12)),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Featured Artists (website): 2-column grid of centered cards — 88px
+/// avatar with verified badge, name, followers · streams, full-width
+/// Follow button. The header badge shows how many artists are signed.
+Widget _featuredArtistsGrid(
+    BuildContext context, AppState state, List<ArtistProfile> artists) {
+  if (artists.isEmpty) return const SizedBox.shrink();
+  final l10n = context.l10n;
+  return Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      _HomeSectionHeader(
+        eyebrow: l10n.theRoster,
+        title: l10n.featuredArtists,
+        linkLabel: l10n.browseEveryone,
+        onLink: () => Navigator.of(context).pushNamed('/artists'),
+        trailing: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(999),
+            border: Border.all(color: Colors.white.withOpacity(0.12)),
+            color: Colors.white.withOpacity(0.04),
+          ),
+          child: Text(l10n.signedCount(artists.length),
+              style: const TextStyle(fontSize: 11, color: Colors.white70)),
+        ),
+      ),
+      GridView.builder(
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 2,
+          crossAxisSpacing: 12,
+          mainAxisSpacing: 12,
+          childAspectRatio: 0.78,
+        ),
+        itemCount: artists.length,
+        itemBuilder: (ctx, i) => _ArtistGridCard(artist: artists[i]),
+      ),
+    ],
+  );
+}
+
+class _ArtistGridCard extends StatelessWidget {
+  final ArtistProfile artist;
+  const _ArtistGridCard({required this.artist});
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    return GestureDetector(
+      onTap: () => Navigator.of(context).pushNamed(
+          '/artist/${Uri.encodeComponent(artist.slug ?? artist.stageName)}',
+          arguments: artist.localUserId),
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(12, 16, 12, 16),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(color: Colors.white.withOpacity(0.08)),
+          color: Colors.white.withOpacity(0.025),
+        ),
+        child: Column(
+          children: [
+            Stack(
+              clipBehavior: Clip.none,
+              children: [
+                Container(
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                        color: SbColors.accent.withOpacity(0.30), width: 2),
+                  ),
+                  child: _artistAvatar(
+                      imageUrl: artist.imageUrl,
+                      name: artist.stageName,
+                      size: 84),
+                ),
+                if (artist.verified)
+                  Positioned(
+                    right: 0,
+                    bottom: 0,
+                    child: Container(
+                      width: 22,
+                      height: 22,
+                      decoration: const BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: SbColors.accent,
+                      ),
+                      child: const Icon(Icons.check,
+                          size: 13, color: Colors.white),
+                    ),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            Text(artist.stageName,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                    fontWeight: FontWeight.w700, fontSize: 15)),
+            const SizedBox(height: 4),
+            Text(
+              '${l10n.followersCount(formatCount(artist.followerCount))} · ${l10n.streamsCount(artist.totalPlays)}',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                  color: Colors.white.withOpacity(0.45), fontSize: 11),
+            ),
+            const SizedBox(height: 12),
+            _FollowButton(
+                artistLocalUserId: artist.localUserId, expanded: true),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Following Feed (website, logged-in only): the latest post of each
+/// artist, up to 3. The app has no followed-artist list in state, so
+/// this shows the latest post of each artist — the same visible content
+/// as the website's feed, not filtered by "followed".
+Widget _followingFeed(BuildContext context, AppState state,
+    List<ArtistPost> posts, List<ArtistProfile> artists) {
+  if (state.user == null || posts.isEmpty) return const SizedBox.shrink();
+  final seen = <int>{};
+  final cards = <ArtistPost>[];
+  for (final p in posts) {
+    if (seen.add(p.artistLocalUserId)) cards.add(p);
+    if (cards.length == 3) break;
+  }
+  if (cards.isEmpty) return const SizedBox.shrink();
+  return Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      _HomeSectionHeader(
+        eyebrow: context.l10n.followToStay,
+        title: context.l10n.whenYouFollow,
+      ),
+      ...cards.map(
+          (p) => _FollowingCard(post: p, artists: artists, state: state)),
+    ],
+  );
+}
+
+class _FollowingCard extends StatelessWidget {
+  final ArtistPost post;
+  final List<ArtistProfile> artists;
+  final AppState state;
+  const _FollowingCard(
+      {required this.post, required this.artists, required this.state});
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final name = post.stageName ?? '';
+    ArtistProfile? artist;
+    for (final a in artists) {
+      if (a.localUserId == post.artistLocalUserId) {
+        artist = a;
+        break;
+      }
+    }
+    final counts = artist == null
+        ? ''
+        : '${l10n.followersCount(formatCount(artist.followerCount))} · ${l10n.songsCount(artist.songCount)}';
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(color: Colors.white.withOpacity(0.08)),
+          color: Colors.white.withOpacity(0.025),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                _artistAvatar(
+                    imageUrl: artist?.imageUrl, name: name, size: 40),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(name,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                              fontWeight: FontWeight.w700, fontSize: 14)),
+                      if (counts.isNotEmpty) ...[
+                        const SizedBox(height: 2),
+                        Text(counts,
+                            style: TextStyle(
+                                color: Colors.white.withOpacity(0.45),
+                                fontSize: 11)),
+                      ],
+                    ],
+                  ),
+                ),
+                _FollowButton(artistLocalUserId: post.artistLocalUserId),
+              ],
+            ),
+            const SizedBox(height: 10),
+            Text(post.body,
+                maxLines: 4,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                    color: Colors.white, fontSize: 14, height: 1.5)),
+            const SizedBox(height: 8),
+            GestureDetector(
+              onTap: () => Navigator.of(context).pushNamed(
+                  '/artist/${Uri.encodeComponent(name)}',
+                  arguments: post.artistLocalUserId),
+              child: Text('${l10n.followToGetUpdates} →',
+                  style: const TextStyle(
+                      color: SbColors.accentPink,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 12)),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Album Spotlight (website): horizontal rail of 160px album cards —
+/// square cover with a track-count chip, title, "artist · type".
+Widget _albumsSpotlight(
+    BuildContext context, AppState state, List<Album> albums) {
+  if (albums.isEmpty) return const SizedBox.shrink();
+  final l10n = context.l10n;
+  return Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      _HomeSectionHeader(
+        eyebrow: l10n.albumsEyebrow,
+        title: l10n.albumSpotlight,
+        linkLabel: l10n.allAlbums,
+        onLink: () => Navigator.of(context).pushNamed('/albums'),
+      ),
+      SizedBox(
+        height: 216,
+        child: ListView.separated(
+          scrollDirection: Axis.horizontal,
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          separatorBuilder: (_, __) => const SizedBox(width: 16),
+          itemCount: albums.length,
+          itemBuilder: (ctx, i) => _AlbumCard(album: albums[i]),
+        ),
+      ),
+    ],
+  );
+}
+
+class _AlbumCard extends StatelessWidget {
+  final Album album;
+  const _AlbumCard({required this.album});
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final count = album.songCount;
+    final subtitle = album.releaseType != null &&
+            (album.releaseType ?? '').isNotEmpty
+        ? '${album.artistName ?? ''} · ${album.releaseType}'
+        : (album.artistName ?? '');
+    return GestureDetector(
+      onTap: () => Navigator.of(context)
+          .pushNamed('/albums/${album.id}', arguments: album),
+      child: SizedBox(
+        width: 160,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Stack(
+              children: [
+                Container(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: Colors.white.withOpacity(0.07)),
+                    color: Colors.white.withOpacity(0.03),
+                  ),
+                  clipBehavior: Clip.antiAlias,
+                  child: CoverImage(
+                      url: album.imageUrl,
+                      size: 160,
+                      radius: 16,
+                      fallbackIcon: Icons.album),
+                ),
+                Positioned(
+                  left: 10,
+                  bottom: 10,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(999),
+                      color: Colors.black.withOpacity(0.55),
+                    ),
+                    child: Text(
+                      count == 1 ? l10n.trackOne : l10n.tracksCount(count),
+                      style: const TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.white),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(album.title,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                    fontWeight: FontWeight.w600, fontSize: 14)),
+            if (subtitle.isNotEmpty)
+              Text(subtitle,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style:
+                      const TextStyle(color: Colors.white54, fontSize: 12)),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Recently Liked (website, logged-in only): up to 8 liked songs in
+/// rows (2 columns on wide screens), with an unlike heart. The dashed
+/// empty box explains how to start the collection.
+Widget _recentlyLikedShelf(
+    BuildContext context, AppState state, List<Song> liked) {
+  if (state.user == null) return const SizedBox.shrink();
+  final l10n = context.l10n;
+  final songs = liked.take(8).toList();
+  final wide = MediaQuery.of(context).size.width >= 600;
+  return Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      _HomeSectionHeader(
+        eyebrow: l10n.yourLibrary,
+        title: l10n.likedRecently,
+        linkLabel: l10n.openFavorites,
+        onLink: () => Navigator.of(context).pushNamed('/favorites'),
+      ),
+      if (songs.isEmpty)
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+          child: Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(color: Colors.white.withOpacity(0.13)),
+              color: Colors.white.withOpacity(0.025),
+            ),
+            child: Column(
+              children: [
+                const Icon(Icons.favorite_border,
+                    color: SbColors.accentPink, size: 28),
+                const SizedBox(height: 10),
+                Text(l10n.likedEmpty,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                        color: Colors.white60, fontSize: 13, height: 1.5)),
+              ],
+            ),
+          ),
+        )
+      else if (wide)
+        GridView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 2,
+            crossAxisSpacing: 12,
+            mainAxisSpacing: 12,
+            childAspectRatio: 2.6,
+          ),
+          itemCount: songs.length,
+          itemBuilder: (ctx, i) => _LikedRow(
+              song: songs[i], queue: songs, state: state, wide: true),
+        )
+      else
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Column(
+            children: [
+              for (var i = 0; i < songs.length; i++) ...[
+                if (i > 0) const SizedBox(height: 12),
+                _LikedRow(
+                    song: songs[i],
+                    queue: songs,
+                    state: state,
+                    wide: false),
+              ],
+            ],
+          ),
+        ),
+    ],
+  );
+}
+
+class _LikedRow extends StatelessWidget {
+  final Song song;
+  final List<Song> queue;
+  final AppState state;
+  final bool wide;
+  const _LikedRow(
+      {required this.song,
+      required this.queue,
+      required this.state,
+      required this.wide});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () => state.playSong(song, fromQueue: queue),
+      child: Container(
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: Colors.white.withOpacity(0.08)),
+          color: Colors.white.withOpacity(0.025),
+        ),
+        child: Row(
+          children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(8),
+              child: CoverImage(
+                  url: song.imageUrl,
+                  size: 48,
+                  radius: 8,
+                  fallbackIcon: Icons.music_note),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(song.title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                          fontWeight: FontWeight.w600, fontSize: 14)),
+                  Text(song.artist,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                          color: Colors.white54, fontSize: 12)),
+                ],
+              ),
+            ),
+            if (wide) ...[
+              Text(song.durationLabel,
+                  style:
+                      TextStyle(
+                          color: Colors.white.withOpacity(0.45),
+                          fontSize: 12)),
+              const SizedBox(width: 12),
+            ],
+            GestureDetector(
+              onTap: () => _toggleLikeHome(context, state, song),
+              child: const Icon(Icons.favorite,
+                  size: 20, color: SbColors.accentPink),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Keep close (website FavoritesShelf): personal favorites (max 4) +
+/// community picks (max 4), deduped, max 4 rows in a pink-tinted
+/// gradient container, with a "View Your Collection" footer.
+Widget _favoritesShelf(BuildContext context, AppState state,
+    List<Song> favorites, List<Song> trending, List<Song> newest) {
+  final seen = <int>{};
+  final visible = <Song>[];
+  for (final s in [
+    ...favorites.take(4),
+    ...trending.take(4),
+    ...newest.take(4)
+  ]) {
+    if (seen.add(s.id)) visible.add(s);
+    if (visible.length == 4) break;
+  }
+  if (visible.isEmpty) return const SizedBox.shrink();
+  final l10n = context.l10n;
+  final wide = MediaQuery.of(context).size.width >= 600;
+  return Padding(
+    padding: const EdgeInsets.fromLTRB(16, 24, 16, 0),
+    child: Container(
+      padding: const EdgeInsets.fromLTRB(16, 24, 16, 20),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(32),
+        border: Border.all(color: Colors.white.withOpacity(0.08)),
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Color(0x0EFFFFFF),
+            Color(0x03FFFFFF),
+            Color(0x0EEE0FAF),
+          ],
+          stops: [0, 0.38, 1],
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: SbColors.accent.withOpacity(0.12),
+            blurRadius: 40,
+            offset: const Offset(0, 16),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.favorite, size: 13, color: SbColors.gold),
+              const SizedBox(width: 6),
+              Text(
+                l10n.yourSound.toUpperCase(),
+                style: const TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 3.0,
+                  color: SbColors.gold,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          DisplayTitle(l10n.keepClose, fontSize: 24),
+          const SizedBox(height: 16),
+          ...visible.map((s) => Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: _FavoriteRow(
+                    song: s, queue: visible, state: state, wide: wide),
+              )),
+          const SizedBox(height: 4),
+          Center(
+            child: OutlinedButton(
+              onPressed: () =>
+                  Navigator.of(context).pushNamed('/favorites'),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: Colors.white,
+                side: BorderSide(color: Colors.white.withOpacity(0.15)),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(999)),
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 20, vertical: 12),
+              ),
+              child: Text(l10n.viewCollection),
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
+}
+
+class _FavoriteRow extends StatelessWidget {
+  final Song song;
+  final List<Song> queue;
+  final AppState state;
+  final bool wide;
+  const _FavoriteRow(
+      {required this.song,
+      required this.queue,
+      required this.state,
+      required this.wide});
+
+  @override
+  Widget build(BuildContext context) {
+    final isFav = state.isFavorite(song.id);
+    final isLiked = state.isLiked(song.id);
+    return Row(
+      children: [
+        GestureDetector(
+          onTap: () => state.playSong(song, fromQueue: queue),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(12),
+            child: CoverImage(
+                url: song.imageUrl,
+                size: 64,
+                radius: 12,
+                fallbackIcon: Icons.music_note),
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              GestureDetector(
+                onTap: () => state.playSong(song, fromQueue: queue),
+                child: Text(song.title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                        fontWeight: FontWeight.w600, fontSize: 14)),
+              ),
+              GestureDetector(
+                onTap: () => Navigator.of(context).pushNamed(
+                    '/artist/${Uri.encodeComponent(song.artist)}'),
+                child: Text(song.artist,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                        color: Colors.white54, fontSize: 12)),
+              ),
+            ],
+          ),
+        ),
+        if (wide) ...[
+          Text(song.durationLabel,
+              style:
+                  TextStyle(
+                      color: Colors.white.withOpacity(0.45), fontSize: 12)),
+          const SizedBox(width: 12),
+        ],
+        GestureDetector(
+          onTap: () => _toggleLikeHome(context, state, song),
+          child: Icon(
+            isLiked ? Icons.favorite : Icons.favorite_border,
+            size: 20,
+            color: isLiked ? SbColors.accentPink : Colors.white70,
+          ),
+        ),
+        const SizedBox(width: 12),
+        GestureDetector(
+          onTap: () => _toggleFavoriteHome(context, state, song),
+          child: Icon(
+            isFav ? Icons.bookmark : Icons.bookmark_border,
+            size: 20,
+            color: isFav ? SbColors.accentPink : Colors.white70,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// Platform Pulse (website): three stat cards, always shown — live
+/// releases, streams so far, artists on the roster.
+Widget _platformPulse(
+    BuildContext context, AppState state, HomeSummary? summary) {
+  final l10n = context.l10n;
+  return Padding(
+    padding: const EdgeInsets.fromLTRB(16, 24, 16, 0),
+    child: Row(
+      children: [
+        _PulseCard(
+          icon: Icons.album,
+          value: formatCount(summary?.totalSongs ?? 0),
+          label: l10n.liveReleases,
+        ),
+        const SizedBox(width: 12),
+        _PulseCard(
+          icon: Icons.play_arrow,
+          value: formatCount(summary?.totalPlays ?? 0),
+          label: l10n.streamsSoFar,
+        ),
+        const SizedBox(width: 12),
+        _PulseCard(
+          icon: Icons.mic,
+          value: '${(summary?.artists ?? []).length}',
+          label: l10n.onTheRoster,
+        ),
+      ],
+    ),
+  );
+}
+
+class _PulseCard extends StatelessWidget {
+  final IconData icon;
+  final String value;
+  final String label;
+  const _PulseCard(
+      {required this.icon, required this.value, required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: Colors.white.withOpacity(0.08)),
+          color: Colors.white.withOpacity(0.02),
+        ),
+        child: Column(
+          children: [
+            Icon(icon, size: 16, color: SbColors.accentPink),
+            const SizedBox(height: 8),
+            Text(value,
+                style: const TextStyle(
+                    fontFamily: 'PlayfairDisplay',
+                    fontWeight: FontWeight.w900,
+                    fontSize: 22)),
+            const SizedBox(height: 4),
+            Text(label.toUpperCase(),
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                    fontSize: 10,
+                    letterSpacing: 2.0,
+                    color: Colors.white.withOpacity(0.45))),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// The Signal card's playing indicator (website): a spinning disc plus
+/// three equalizer bars in a glass pill. The bars are static heights —
+/// the website animates them; the disc spins.
+class _PlayingChip extends StatelessWidget {
+  const _PlayingChip();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: Colors.white.withOpacity(0.10)),
+        color: Colors.black.withOpacity(0.65),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const _SpinningDisc(size: 14),
+          const SizedBox(width: 6),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            mainAxisSize: MainAxisSize.min,
+            children: const [
+              _EqBar(height: 8),
+              SizedBox(width: 2),
+              _EqBar(height: 12),
+              SizedBox(width: 2),
+              _EqBar(height: 6),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _EqBar extends StatelessWidget {
+  final double height;
+  const _EqBar({required this.height});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 3,
+      height: height,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(2),
+        color: Colors.white,
+      ),
+    );
+  }
+}
+
+class _SpinningDisc extends StatefulWidget {
+  final double size;
+  const _SpinningDisc({required this.size});
+
+  @override
+  State<_SpinningDisc> createState() => _SpinningDiscState();
+}
+
+class _SpinningDiscState extends State<_SpinningDisc>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 2),
+    )..repeat();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return RotationTransition(
+      turns: _controller,
+      child:
+          Icon(Icons.album, size: widget.size, color: SbColors.accentPink),
     );
   }
 }

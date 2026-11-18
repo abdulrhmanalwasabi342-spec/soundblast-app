@@ -3472,6 +3472,288 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Background audio: unavailable — music stops when the app closes.'**
   String get backgroundAudioUnavailable;
+
+  /// No description provided for @heroSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Find the sound that stays with you. New music, live artists, and a room that listens back.'**
+  String get heroSubtitle;
+
+  /// No description provided for @pathsChart.
+  ///
+  /// In en, this message translates to:
+  /// **'The chart'**
+  String get pathsChart;
+
+  /// No description provided for @pathsMoveMoment.
+  ///
+  /// In en, this message translates to:
+  /// **'Move with the moment'**
+  String get pathsMoveMoment;
+
+  /// No description provided for @pathsTracksRotation.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} tracks in rotation'**
+  String pathsTracksRotation(int count);
+
+  /// No description provided for @pathsArtistRoster.
+  ///
+  /// In en, this message translates to:
+  /// **'Artist roster'**
+  String get pathsArtistRoster;
+
+  /// No description provided for @pathsStepInside.
+  ///
+  /// In en, this message translates to:
+  /// **'Step inside their world'**
+  String get pathsStepInside;
+
+  /// No description provided for @pathsVoicesFollow.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} voices to follow'**
+  String pathsVoicesFollow(int count);
+
+  /// No description provided for @pathsReleaseLibrary.
+  ///
+  /// In en, this message translates to:
+  /// **'Release library'**
+  String get pathsReleaseLibrary;
+
+  /// No description provided for @pathsListenChapters.
+  ///
+  /// In en, this message translates to:
+  /// **'Listen in chapters'**
+  String get pathsListenChapters;
+
+  /// No description provided for @pathsReleasesWaiting.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} releases waiting'**
+  String pathsReleasesWaiting(int count);
+
+  /// No description provided for @pathsOpen.
+  ///
+  /// In en, this message translates to:
+  /// **'Open'**
+  String get pathsOpen;
+
+  /// No description provided for @recentPlays.
+  ///
+  /// In en, this message translates to:
+  /// **'Your recent plays'**
+  String get recentPlays;
+
+  /// No description provided for @listenAgain.
+  ///
+  /// In en, this message translates to:
+  /// **'Listen Again'**
+  String get listenAgain;
+
+  /// No description provided for @lastPlaysEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Your last plays will appear here.'**
+  String get lastPlaysEmpty;
+
+  /// No description provided for @lastPlaysHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Start a track and SoundBlast will keep this space ready for your next session.'**
+  String get lastPlaysHint;
+
+  /// No description provided for @exploreMoving.
+  ///
+  /// In en, this message translates to:
+  /// **'Explore what is moving'**
+  String get exploreMoving;
+
+  /// No description provided for @privateAccount.
+  ///
+  /// In en, this message translates to:
+  /// **'Private to your account'**
+  String get privateAccount;
+
+  /// No description provided for @trendingNow.
+  ///
+  /// In en, this message translates to:
+  /// **'Trending Now'**
+  String get trendingNow;
+
+  /// No description provided for @onEveryoneEars.
+  ///
+  /// In en, this message translates to:
+  /// **'On Everyone's Ears'**
+  String get onEveryoneEars;
+
+  /// No description provided for @seeTheChart.
+  ///
+  /// In en, this message translates to:
+  /// **'See the chart'**
+  String get seeTheChart;
+
+  /// No description provided for @artistVoice.
+  ///
+  /// In en, this message translates to:
+  /// **'Artist Voice'**
+  String get artistVoice;
+
+  /// No description provided for @straightFromArtists.
+  ///
+  /// In en, this message translates to:
+  /// **'Straight From The Artists'**
+  String get straightFromArtists;
+
+  /// No description provided for @seeAllPosts.
+  ///
+  /// In en, this message translates to:
+  /// **'See all posts'**
+  String get seeAllPosts;
+
+  /// No description provided for @viewArtistProfile.
+  ///
+  /// In en, this message translates to:
+  /// **'View artist profile'**
+  String get viewArtistProfile;
+
+  /// No description provided for @theRoster.
+  ///
+  /// In en, this message translates to:
+  /// **'The Roster'**
+  String get theRoster;
+
+  /// No description provided for @featuredArtists.
+  ///
+  /// In en, this message translates to:
+  /// **'Featured Artists'**
+  String get featuredArtists;
+
+  /// No description provided for @browseEveryone.
+  ///
+  /// In en, this message translates to:
+  /// **'Browse everyone'**
+  String get browseEveryone;
+
+  /// No description provided for @signedCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} signed'**
+  String signedCount(int count);
+
+  /// No description provided for @streamsCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} streams'**
+  String streamsCount(int count);
+
+  /// No description provided for @albumsEyebrow.
+  ///
+  /// In en, this message translates to:
+  /// **'Albums'**
+  String get albumsEyebrow;
+
+  /// No description provided for @albumSpotlight.
+  ///
+  /// In en, this message translates to:
+  /// **'Album Spotlight'**
+  String get albumSpotlight;
+
+  /// No description provided for @allAlbums.
+  ///
+  /// In en, this message translates to:
+  /// **'All albums'**
+  String get allAlbums;
+
+  /// No description provided for @tracksCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} tracks'**
+  String tracksCount(int count);
+
+  /// No description provided for @trackOne.
+  ///
+  /// In en, this message translates to:
+  /// **'1 track'**
+  String get trackOne;
+
+  /// No description provided for @likedRecently.
+  ///
+  /// In en, this message translates to:
+  /// **'Liked Recently'**
+  String get likedRecently;
+
+  /// No description provided for @openFavorites.
+  ///
+  /// In en, this message translates to:
+  /// **'Open favorites'**
+  String get openFavorites;
+
+  /// No description provided for @likedEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Songs you like will gather here. Tap the heart on any track to start your collection.'**
+  String get likedEmpty;
+
+  /// No description provided for @loadingLikes.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading your likes…'**
+  String get loadingLikes;
+
+  /// No description provided for @followToStay.
+  ///
+  /// In en, this message translates to:
+  /// **'Follow To Stay In The Loop'**
+  String get followToStay;
+
+  /// No description provided for @whenYouFollow.
+  ///
+  /// In en, this message translates to:
+  /// **'When You Follow An Artist'**
+  String get whenYouFollow;
+
+  /// No description provided for @followToGetUpdates.
+  ///
+  /// In en, this message translates to:
+  /// **'Follow to get their updates here'**
+  String get followToGetUpdates;
+
+  /// No description provided for @yourSound.
+  ///
+  /// In en, this message translates to:
+  /// **'Your Sound'**
+  String get yourSound;
+
+  /// No description provided for @keepClose.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep close'**
+  String get keepClose;
+
+  /// No description provided for @viewCollection.
+  ///
+  /// In en, this message translates to:
+  /// **'View Your Collection'**
+  String get viewCollection;
+
+  /// No description provided for @liveReleases.
+  ///
+  /// In en, this message translates to:
+  /// **'Live releases'**
+  String get liveReleases;
+
+  /// No description provided for @streamsSoFar.
+  ///
+  /// In en, this message translates to:
+  /// **'Streams so far'**
+  String get streamsSoFar;
+
+  /// No description provided for @onTheRoster.
+  ///
+  /// In en, this message translates to:
+  /// **'On the roster'**
+  String get onTheRoster;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

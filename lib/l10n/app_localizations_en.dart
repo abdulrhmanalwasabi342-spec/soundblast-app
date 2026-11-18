@@ -1824,4 +1824,157 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get backgroundAudioUnavailable => 'Background audio: unavailable — music stops when the app closes.';
+
+  @override
+  String get heroSubtitle => 'Find the sound that stays with you. New music, live artists, and a room that listens back.';
+
+  @override
+  String get pathsChart => 'The chart';
+
+  @override
+  String get pathsMoveMoment => 'Move with the moment';
+
+  @override
+  String pathsTracksRotation(int count) {
+    return '$count tracks in rotation';
+  }
+
+  @override
+  String get pathsArtistRoster => 'Artist roster';
+
+  @override
+  String get pathsStepInside => 'Step inside their world';
+
+  @override
+  String pathsVoicesFollow(int count) {
+    return '$count voices to follow';
+  }
+
+  @override
+  String get pathsReleaseLibrary => 'Release library';
+
+  @override
+  String get pathsListenChapters => 'Listen in chapters';
+
+  @override
+  String pathsReleasesWaiting(int count) {
+    return '$count releases waiting';
+  }
+
+  @override
+  String get pathsOpen => 'Open';
+
+  @override
+  String get recentPlays => 'Your recent plays';
+
+  @override
+  String get listenAgain => 'Listen Again';
+
+  @override
+  String get lastPlaysEmpty => 'Your last plays will appear here.';
+
+  @override
+  String get lastPlaysHint => 'Start a track and SoundBlast will keep this space ready for your next session.';
+
+  @override
+  String get exploreMoving => 'Explore what is moving';
+
+  @override
+  String get privateAccount => 'Private to your account';
+
+  @override
+  String get trendingNow => 'Trending Now';
+
+  @override
+  String get onEveryoneEars => 'On Everyone\'s Ears';
+
+  @override
+  String get seeTheChart => 'See the chart';
+
+  @override
+  String get artistVoice => 'Artist Voice';
+
+  @override
+  String get straightFromArtists => 'Straight From The Artists';
+
+  @override
+  String get seeAllPosts => 'See all posts';
+
+  @override
+  String get viewArtistProfile => 'View artist profile';
+
+  @override
+  String get theRoster => 'The Roster';
+
+  @override
+  String get featuredArtists => 'Featured Artists';
+
+  @override
+  String get browseEveryone => 'Browse everyone';
+
+  @override
+  String signedCount(int count) {
+    return '$count signed';
+  }
+
+  @override
+  String streamsCount(int count) {
+    return '$count streams';
+  }
+
+  @override
+  String get albumsEyebrow => 'Albums';
+
+  @override
+  String get albumSpotlight => 'Album Spotlight';
+
+  @override
+  String get allAlbums => 'All albums';
+
+  @override
+  String tracksCount(int count) {
+    return '$count tracks';
+  }
+
+  @override
+  String get trackOne => '1 track';
+
+  @override
+  String get likedRecently => 'Liked Recently';
+
+  @override
+  String get openFavorites => 'Open favorites';
+
+  @override
+  String get likedEmpty => 'Songs you like will gather here. Tap the heart on any track to start your collection.';
+
+  @override
+  String get loadingLikes => 'Loading your likes…';
+
+  @override
+  String get followToStay => 'Follow To Stay In The Loop';
+
+  @override
+  String get whenYouFollow => 'When You Follow An Artist';
+
+  @override
+  String get followToGetUpdates => 'Follow to get their updates here';
+
+  @override
+  String get yourSound => 'Your Sound';
+
+  @override
+  String get keepClose => 'Keep close';
+
+  @override
+  String get viewCollection => 'View Your Collection';
+
+  @override
+  String get liveReleases => 'Live releases';
+
+  @override
+  String get streamsSoFar => 'Streams so far';
+
+  @override
+  String get onTheRoster => 'On the roster';
 }

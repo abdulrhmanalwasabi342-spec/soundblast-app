@@ -176,8 +176,14 @@ class DisplayTitle extends StatelessWidget {
   final String text;
   final double fontSize;
   final TextAlign align;
+  final double? height;
+  final double? letterSpacing;
   const DisplayTitle(this.text,
-      {super.key, this.fontSize = 32, this.align = TextAlign.start});
+      {super.key,
+      this.fontSize = 32,
+      this.align = TextAlign.start,
+      this.height,
+      this.letterSpacing});
 
   @override
   Widget build(BuildContext context) {
@@ -189,7 +195,8 @@ class DisplayTitle extends StatelessWidget {
         fontSize: fontSize,
         fontWeight: FontWeight.w900,
         color: SbColors.text,
-        height: 1.05,
+        height: height ?? 1.05,
+        letterSpacing: letterSpacing,
       ),
     );
   }

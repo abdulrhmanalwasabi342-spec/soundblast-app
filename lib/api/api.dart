@@ -96,6 +96,14 @@ class SoundBlastApi {
     return [];
   }
 
+  /// Recently played songs for the logged-in user (songs.listenAgain).
+  /// Callers must guard with a logged-in check; returns [] on any failure.
+  Future<List<Song>> listenAgain() async {
+    final json = await client.query('songs.listenAgain');
+    if (json is List) return json.map(Song.fromJson).toList();
+    return [];
+  }
+
   Future<List<String>> genres() async {
     final json = await client.query('songs.genres');
     if (json is List) return json.map((e) => e.toString()).toList();

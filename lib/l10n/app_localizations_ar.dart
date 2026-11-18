@@ -1842,4 +1842,157 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get backgroundAudioUnavailable => 'الصوت بالخلفية: غير متاح — الموسيقى تتوقف عند إغلاق التطبيق.';
+
+  @override
+  String get heroSubtitle => 'اعثر على الصوت الذي يبقى معك. موسيقى جديدة وفنانون مباشرون وغرفة تستمع إليك.';
+
+  @override
+  String get pathsChart => 'المخطط';
+
+  @override
+  String get pathsMoveMoment => 'تحرّك مع اللحظة';
+
+  @override
+  String pathsTracksRotation(int count) {
+    return '$count أغنية في القائمة';
+  }
+
+  @override
+  String get pathsArtistRoster => 'قائمة الفنانين';
+
+  @override
+  String get pathsStepInside => 'ادخل إلى عالمهم';
+
+  @override
+  String pathsVoicesFollow(int count) {
+    return '$count صوت للمتابعة';
+  }
+
+  @override
+  String get pathsReleaseLibrary => 'مكتبة الإصدارات';
+
+  @override
+  String get pathsListenChapters => 'استمع على فصول';
+
+  @override
+  String pathsReleasesWaiting(int count) {
+    return '$count إصدار بانتظارك';
+  }
+
+  @override
+  String get pathsOpen => 'افتح';
+
+  @override
+  String get recentPlays => 'تشغيلاتك الأخيرة';
+
+  @override
+  String get listenAgain => 'استمع مجددًا';
+
+  @override
+  String get lastPlaysEmpty => 'ستظهر آخر تشغيلاتك هنا.';
+
+  @override
+  String get lastPlaysHint => 'شغّل أغنية وسيحتفظ SoundBlast بهذا المكان جاهزًا لجلستك القادمة.';
+
+  @override
+  String get exploreMoving => 'اكتشف ما يتحرك الآن';
+
+  @override
+  String get privateAccount => 'خاص بحسابك';
+
+  @override
+  String get trendingNow => 'الرائج الآن';
+
+  @override
+  String get onEveryoneEars => 'على أسماع الجميع';
+
+  @override
+  String get seeTheChart => 'شاهد المخطط';
+
+  @override
+  String get artistVoice => 'صوت الفنان';
+
+  @override
+  String get straightFromArtists => 'مباشرة من الفنانين';
+
+  @override
+  String get seeAllPosts => 'شاهد كل المنشورات';
+
+  @override
+  String get viewArtistProfile => 'عرض ملف الفنان';
+
+  @override
+  String get theRoster => 'القائمة';
+
+  @override
+  String get featuredArtists => 'فنانون مميزون';
+
+  @override
+  String get browseEveryone => 'تصفح الجميع';
+
+  @override
+  String signedCount(int count) {
+    return '$count موقّع';
+  }
+
+  @override
+  String streamsCount(int count) {
+    return '$count استماع';
+  }
+
+  @override
+  String get albumsEyebrow => 'ألبومات';
+
+  @override
+  String get albumSpotlight => 'تسليط على الألبومات';
+
+  @override
+  String get allAlbums => 'كل الألبومات';
+
+  @override
+  String tracksCount(int count) {
+    return '$count أغنية';
+  }
+
+  @override
+  String get trackOne => 'أغنية واحدة';
+
+  @override
+  String get likedRecently => 'أُعجبت بها مؤخرًا';
+
+  @override
+  String get openFavorites => 'افتح المفضلة';
+
+  @override
+  String get likedEmpty => 'ستتجمع الأغاني التي تعجبك هنا. اضغط القلب على أي أغنية لتبدأ مجموعتك.';
+
+  @override
+  String get loadingLikes => 'جارٍ تحميل إعجاباتك…';
+
+  @override
+  String get followToStay => 'تابِع لتبقى على اطلاع';
+
+  @override
+  String get whenYouFollow => 'عندما تتابع فنانًا';
+
+  @override
+  String get followToGetUpdates => 'تابِع لتصلك تحديثاتهم هنا';
+
+  @override
+  String get yourSound => 'صوتك';
+
+  @override
+  String get keepClose => 'احتفظ بالقرب';
+
+  @override
+  String get viewCollection => 'عرض مجموعتك';
+
+  @override
+  String get liveReleases => 'إصدارات حية';
+
+  @override
+  String get streamsSoFar => 'استماعات حتى الآن';
+
+  @override
+  String get onTheRoster => 'في القائمة';
 }
