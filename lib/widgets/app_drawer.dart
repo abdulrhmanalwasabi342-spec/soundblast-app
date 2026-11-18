@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../l10n/app_localizations.dart';
 import '../state/app_state.dart';
 import '../widgets/common.dart';
 
@@ -46,32 +47,37 @@ class AppDrawer extends StatelessWidget {
   final int currentTab;
   final ValueChanged<int> onSelectTab;
 
-  static const _menu = [
-    _DrawerEntry('Home', Icons.home, '/', tab: 0),
-    _DrawerEntry('Discover', Icons.explore, '/discover', tab: 1),
-    _DrawerEntry('Albums', Icons.album, '/albums'),
-    _DrawerEntry('Artists', Icons.person, '/artists'),
-    _DrawerEntry('Artist Posts', Icons.message, '/artist-posts'),
-  ];
+  /// The website's three navigation groups, in the same order, with the
+  /// same labels and routes. Built from the current language on every build
+  /// (not const) so switching the language rebuilds the drawer.
+  List<_DrawerEntry> _menu(AppLocalizations l) => [
+        _DrawerEntry(l.navHome, Icons.home, '/', tab: 0),
+        _DrawerEntry(l.navDiscover, Icons.explore, '/discover', tab: 1),
+        _DrawerEntry(l.navAlbums, Icons.album, '/albums'),
+        _DrawerEntry(l.navArtists, Icons.person, '/artists'),
+        _DrawerEntry(l.navArtistPosts, Icons.message, '/artist-posts'),
+      ];
 
-  static const _library = [
-    _DrawerEntry('Music Player', Icons.trending_up, '/music-player'),
-    _DrawerEntry('Feedback', Icons.message, '/feedback'),
-    _DrawerEntry('Trending Songs', Icons.local_fire_department, '/trending'),
-    _DrawerEntry('Genres', Icons.music_note, '/genres'),
-    _DrawerEntry('Dashboard', Icons.bar_chart, '/dashboard'),
-  ];
+  List<_DrawerEntry> _library(AppLocalizations l) => [
+        _DrawerEntry(l.navMusicPlayer, Icons.trending_up, '/music-player'),
+        _DrawerEntry(l.navFeedback, Icons.message, '/feedback'),
+        _DrawerEntry(l.navTrendingSongs, Icons.local_fire_department,
+            '/trending'),
+        _DrawerEntry(l.navGenres, Icons.music_note, '/genres'),
+        _DrawerEntry(l.navDashboard, Icons.bar_chart, '/dashboard'),
+      ];
 
-  static const _playlists = [
-    _DrawerEntry('Favorites', Icons.favorite, '/favorites'),
-    _DrawerEntry('Liked Songs', Icons.music_note, '/liked'),
-    _DrawerEntry('Playlists', Icons.list, '/playlists'),
-    _DrawerEntry('Add playlist', Icons.add, '/playlists/create'),
-  ];
+  List<_DrawerEntry> _playlists(AppLocalizations l) => [
+        _DrawerEntry(l.navFavorites, Icons.favorite, '/favorites'),
+        _DrawerEntry(l.navLikedSongs, Icons.music_note, '/liked'),
+        _DrawerEntry(l.navPlaylists, Icons.list, '/playlists'),
+        _DrawerEntry(l.navAddPlaylist, Icons.add, '/playlists/create'),
+      ];
 
   @override
   Widget build(BuildContext context) {
     final state = context.watch<AppState>();
+    final l10n = context.l10n;
     return Drawer(
       backgroundColor: SbColors.surface,
       child: SafeArea(
@@ -83,9 +89,9 @@ class AppDrawer extends StatelessWidget {
               child: ListView(
                 padding: const EdgeInsets.symmetric(vertical: 8),
                 children: [
-                  _section(context, 'Menu', _menu),
-                  _section(context, 'Library', _library),
-                  _section(context, 'Playlists', _playlists),
+                  _section(context, l10n.navMenu, _menu(l10n)),
+                  _section(context, l10n.navLibrary, _library(l10n)),
+                  _section(context, l10n.navPlaylists, _playlists(l10n)),
                 ],
               ),
             ),
@@ -196,7 +202,7 @@ class AppDrawer extends StatelessWidget {
     if (user == null) {
       return ListTile(
         leading: const Icon(Icons.login, size: 20, color: Colors.white70),
-        title: const Text('Log in'),
+        title: Text(context.l10n.login),
         onTap: () {
           final navigator = Navigator.of(context);
           navigator.pop();

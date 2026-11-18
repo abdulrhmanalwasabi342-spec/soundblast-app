@@ -185,14 +185,14 @@ class _HomeScreenState extends State<HomeScreen> {
                         _songShelf(
                           context,
                           state,
-                          title: 'Weekly top',
-                          subtitle: 'Most played this week',
+                          title: context.l10n.weeklyTop,
+                          subtitle: context.l10n.mostPlayedWeek,
                           songs: _songs,
                           onSeeAll: () =>
                               Navigator.of(context).pushNamed('/trending'),
                         ),
                       if (_genres.isNotEmpty) ...[
-                        const SectionHeader(title: 'Moods & genres'),
+                        SectionHeader(title: context.l10n.moodsGenres),
                         SizedBox(
                           height: 96,
                           child: ListView.separated(
@@ -235,9 +235,9 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                       ],
                       if ((_summary?.artists ?? []).isNotEmpty) ...[
-                        const SectionHeader(
-                            title: 'Popular artists',
-                            subtitle: 'Most followed on SoundBlast'),
+                        SectionHeader(
+                            title: context.l10n.popularArtists,
+                            subtitle: context.l10n.mostFollowed),
                         SizedBox(
                           height: 168,
                           child: ListView.separated(
@@ -264,13 +264,13 @@ class _HomeScreenState extends State<HomeScreen> {
                       if (_songs.isEmpty && _genres.isEmpty)
                         EmptyState(
                           icon: Icons.library_music_outlined,
-                          title: 'No songs yet',
+                          title: context.l10n.noSongsYet,
                           message:
                               'The SoundBlast library is empty right now. Artists can publish the first songs from Upload.',
                           action: ElevatedButton(
                             onPressed: () => Navigator.of(context)
                                 .pushNamed('/upload'),
-                            child: const Text('Upload a song'),
+                            child: Text(context.l10n.uploadSong),
                           ),
                         ),
                       const SizedBox(height: 32),
@@ -338,13 +338,13 @@ class _HomeScreenState extends State<HomeScreen> {
                           color: Colors.white.withOpacity(0.10)),
                       color: Colors.white.withOpacity(0.045),
                     ),
-                    child: const Row(
+                    child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Icon(Icons.radio,
                             size: 12, color: SbColors.accentPink),
                         SizedBox(width: 6),
-                        Text('LISTEN WITH INTENT',
+                        Text(context.l10n.listenWithIntent,
                             style: TextStyle(
                                 fontSize: 10,
                                 fontWeight: FontWeight.w600,
@@ -407,7 +407,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       padding: const EdgeInsets.symmetric(
                           horizontal: 20, vertical: 12),
                     ),
-                    child: const Text('Meet the artists'),
+                    child: Text(context.l10n.meetArtists),
                   ),
                   TextButton(
                     onPressed: () =>
@@ -495,7 +495,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   GestureDetector(
                     onTap: () =>
                         Navigator.of(context).pushNamed('/albums'),
-                    child: const Text('Browse releases ↗',
+                    child: Text(context.l10n.browseReleases,
                         style: TextStyle(
                             color: Colors.white60, fontSize: 13)),
                   ),
@@ -803,7 +803,7 @@ class _SignalCard extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(width: 8),
-                      const Text('NOW PLAYING',
+                      Text(context.l10n.nowPlaying,
                           style: TextStyle(
                               fontSize: 10,
                               fontWeight: FontWeight.w600,
@@ -912,7 +912,7 @@ class SongActions extends StatelessWidget {
             const Divider(color: SbColors.border),
             ListTile(
               leading: const Icon(Icons.play_arrow),
-              title: const Text('Play next'),
+              title: Text(context.l10n.playNext),
               onTap: () {
                 Navigator.of(ctx).pop();
                 state.playSong(song,
@@ -921,7 +921,7 @@ class SongActions extends StatelessWidget {
             ),
             ListTile(
               leading: const Icon(Icons.playlist_add),
-              title: const Text('Add to playlist'),
+              title: Text(context.l10n.addToPlaylist),
               onTap: () {
                 Navigator.of(ctx).pop();
                 _showAddToPlaylist(context, state, song);
@@ -957,7 +957,7 @@ class SongActions extends StatelessWidget {
             ),
             ListTile(
               leading: const Icon(Icons.person),
-              title: Text('Go to artist: ${song.artist}'),
+              title: Text(context.l10n.goToArtist(song.artist)),
               onTap: () {
                 Navigator.of(ctx).pop();
                 Navigator.of(context).pushNamed(
@@ -990,9 +990,9 @@ class SongActions extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Padding(
+            Padding(
               padding: EdgeInsets.all(16),
-              child: Text('Add to playlist',
+              child: Text(context.l10n.addToPlaylist,
                   style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
             ),
             ...state.playlists.map((p) => ListTile(
@@ -1077,7 +1077,7 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
     return Scaffold(
       appBar: AppBar(
           leading: const DrawerMenuButton(),
-          title: const Text('Discover')),
+          title: Text(context.l10n.navDiscover)),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : _error != null
@@ -1099,11 +1099,11 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
                             ],
                           ),
                         ),
-                      const SectionHeader(title: 'All songs'),
+                      SectionHeader(title: context.l10n.allSongs),
                       if (_visible.isEmpty)
-                        const EmptyState(
+                        EmptyState(
                           icon: Icons.music_off_outlined,
-                          title: 'Nothing here yet',
+                          title: context.l10n.nothingHere,
                           message:
                               'No songs match this filter. Try another genre.',
                         )
@@ -1116,7 +1116,7 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
                               trailing: SongActions(song: s),
                             )),
                       if (_artists.isNotEmpty) ...[
-                        const SectionHeader(title: 'Artists to explore'),
+                        SectionHeader(title: context.l10n.artistsToExplore),
                         SizedBox(
                           height: 168,
                           child: ListView.separated(
@@ -1210,15 +1210,15 @@ class _TrendingScreenState extends State<TrendingScreen> {
   Widget build(BuildContext context) {
     final state = context.watch<AppState>();
     return Scaffold(
-      appBar: AppBar(title: const Text('Trending')),
+      appBar: AppBar(title: Text(context.l10n.trending)),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : _error != null
               ? ErrorView(message: _error!, onRetry: _load)
               : _songs.isEmpty
-                  ? const EmptyState(
+                  ? EmptyState(
                       icon: Icons.trending_up,
-                      title: 'No trending songs yet',
+                      title: context.l10n.noTrending,
                       message:
                           'Trending is computed from plays in the last 7 days. Once people start listening, the chart fills up here.',
                     )

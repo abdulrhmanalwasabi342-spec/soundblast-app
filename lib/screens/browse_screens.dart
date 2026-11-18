@@ -57,15 +57,15 @@ class _GenresScreenState extends State<GenresScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Genres')),
+      appBar: AppBar(title: Text(context.l10n.genres)),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : _error != null
               ? ErrorView(message: _error!, onRetry: _load)
               : _genres.isEmpty
-                  ? const EmptyState(
+                  ? EmptyState(
                       icon: Icons.category_outlined,
-                      title: 'No genres yet',
+                      title: context.l10n.noGenres,
                       message:
                           'Genres appear here once artists publish songs.',
                     )
@@ -198,7 +198,7 @@ class _GenreDetailsScreenState extends State<GenreDetailsScreen> {
                             onPressed: () => state.playSong(_songs.first,
                                 fromQueue: _songs),
                             icon: const Icon(Icons.play_arrow),
-                            label: const Text('Play all'),
+                            label: Text(context.l10n.playAll),
                           ),
                         ),
                       ),
@@ -207,7 +207,7 @@ class _GenreDetailsScreenState extends State<GenreDetailsScreen> {
                       child: _songs.isEmpty
                           ? EmptyState(
                               icon: Icons.music_off_outlined,
-                              title: 'No $widget.slug songs yet',
+                              title: context.l10n.noSlugSongs(widget.slug),
                               message:
                                   'No public songs in this genre right now.',
                             )
@@ -274,15 +274,15 @@ class _AlbumsScreenState extends State<AlbumsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Albums')),
+      appBar: AppBar(title: Text(context.l10n.navAlbums)),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : _error != null
               ? ErrorView(message: _error!, onRetry: _load)
               : _albums.isEmpty
-                  ? const EmptyState(
+                  ? EmptyState(
                       icon: Icons.album_outlined,
-                      title: 'No albums yet',
+                      title: context.l10n.noAlbums,
                       message:
                           'Albums appear here once artists publish releases.',
                     )
@@ -413,10 +413,10 @@ class _AlbumDetailsScreenState extends State<AlbumDetailsScreen> {
           : _error != null
               ? ErrorView(message: _error!, onRetry: _load)
               : _album == null
-                  ? const EmptyState(
+                  ? EmptyState(
                       icon: Icons.album_outlined,
-                      title: 'Album not found',
-                      message: 'This release may be private or removed.',
+                      title: context.l10n.albumNotFound,
+                      message: context.l10n.releasePrivate,
                     )
                   : ListView(
                       children: [
@@ -478,7 +478,7 @@ class _AlbumDetailsScreenState extends State<AlbumDetailsScreen> {
                                   : () => state.playSong(_songs.first,
                                       fromQueue: _songs),
                               icon: const Icon(Icons.play_arrow),
-                              label: const Text('Play album'),
+                              label: Text(context.l10n.playAlbum),
                             ),
                           ),
                         ),
@@ -551,15 +551,15 @@ class _ArtistsScreenState extends State<ArtistsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Artists')),
+      appBar: AppBar(title: Text(context.l10n.artists)),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : _error != null
               ? ErrorView(message: _error!, onRetry: _load)
               : _artists.isEmpty
-                  ? const EmptyState(
+                  ? EmptyState(
                       icon: Icons.people_outline,
-                      title: 'No artists yet',
+                      title: context.l10n.noArtists,
                       message:
                           'Artists appear here once they sign up and publish.',
                     )
@@ -697,10 +697,10 @@ class _ArtistPageScreenState extends State<ArtistPageScreen> {
           : _error != null
               ? ErrorView(message: _error!, onRetry: _load)
               : _profile == null
-                  ? const EmptyState(
+                  ? EmptyState(
                       icon: Icons.person_off_outlined,
-                      title: 'Artist not found',
-                      message: 'This artist page does not exist.',
+                      title: context.l10n.artistNotFound,
+                      message: context.l10n.artistPageMissing,
                     )
                   : RefreshIndicator(
                       onRefresh: _load,
@@ -758,7 +758,7 @@ class _ArtistPageScreenState extends State<ArtistPageScreen> {
                                                 _songs.first,
                                                 fromQueue: _songs),
                                         icon: const Icon(Icons.play_arrow),
-                                        label: const Text('Play'),
+                                        label: Text(context.l10n.play),
                                       ),
                                     ),
                                     const SizedBox(width: 12),
@@ -786,7 +786,7 @@ class _ArtistPageScreenState extends State<ArtistPageScreen> {
                               ],
                             ),
                           ),
-                          const SectionHeader(title: 'Songs'),
+                          SectionHeader(title: context.l10n.songs),
                           if (_songs.isEmpty)
                             const Padding(
                               padding: EdgeInsets.all(16),
@@ -806,7 +806,7 @@ class _ArtistPageScreenState extends State<ArtistPageScreen> {
                                   trailing: SongActions(song: s),
                                 )),
                           if (_posts.isNotEmpty) ...[
-                            const SectionHeader(title: 'Posts'),
+                            SectionHeader(title: context.l10n.posts),
                             ..._posts.map((p) => Card(
                                   margin: const EdgeInsets.symmetric(
                                       horizontal: 16, vertical: 6),
@@ -894,7 +894,7 @@ class _ArtistPostsScreenState extends State<ArtistPostsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Artist Posts')),
+      appBar: AppBar(title: Text(context.l10n.navArtistPosts)),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : _error != null
@@ -903,10 +903,10 @@ class _ArtistPostsScreenState extends State<ArtistPostsScreen> {
                       'The artist posts feed is unavailable on the server right now ($_error). Artist posts still work on each artist page.',
                   onRetry: _load)
               : _posts.isEmpty
-                  ? const EmptyState(
+                  ? EmptyState(
                       icon: Icons.post_add_outlined,
-                      title: 'No posts yet',
-                      message: 'Artists have not shared any public posts.',
+                      title: context.l10n.noPosts,
+                      message: context.l10n.noArtistPosts,
                     )
                   : RefreshIndicator(
                       onRefresh: _load,
@@ -985,15 +985,15 @@ class _GalleryScreenState extends State<GalleryScreen> {
   Widget build(BuildContext context) {
     final state = context.watch<AppState>();
     return Scaffold(
-      appBar: AppBar(title: const Text('Gallery')),
+      appBar: AppBar(title: Text(context.l10n.gallery)),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : _error != null
               ? ErrorView(message: _error!, onRetry: _load)
               : _songs.isEmpty
-                  ? const EmptyState(
+                  ? EmptyState(
                       icon: Icons.photo_library_outlined,
-                      title: 'Gallery is empty',
+                      title: context.l10n.galleryEmpty,
                       message:
                           'Song artwork appears here once songs with cover art are published.',
                     )
@@ -1052,7 +1052,7 @@ class SitemapScreen extends StatelessWidget {
       ('Gallery', '/gallery', Icons.photo_library),
     ];
     return Scaffold(
-      appBar: AppBar(title: const Text('Sitemap')),
+      appBar: AppBar(title: Text(context.l10n.sitemap)),
       body: ListView(
         children: [
           ...items.map((e) => ListTile(
@@ -1064,14 +1064,14 @@ class SitemapScreen extends StatelessWidget {
           if (state.user == null)
             ListTile(
               leading: const Icon(Icons.login, color: SbColors.accent),
-              title: const Text('Log in'),
+              title: Text(context.l10n.login),
               onTap: () => Navigator.of(context).pushNamed('/login'),
             ),
           if (state.user != null && state.user!.isAdmin)
             ListTile(
               leading: const Icon(Icons.admin_panel_settings,
                   color: SbColors.accent),
-              title: const Text('Admin'),
+              title: Text(context.l10n.admin),
               onTap: () => Navigator.of(context).pushNamed('/admin'),
             ),
         ],

@@ -59,37 +59,37 @@ class _PlayerScreenState extends State<PlayerScreen> {
         final song = state.currentSong;
         if (song == null) {
           return Scaffold(
-            appBar: AppBar(title: const Text('Now Playing')),
+            appBar: AppBar(title: Text(context.l10n.nowPlayingTitle)),
             body: EmptyState(
               icon: Icons.music_note,
-              title: 'Nothing playing',
-              message: 'Pick a song from Home, Discover or Search to start listening.',
+              title: context.l10n.nothingPlaying,
+              message: context.l10n.pickSongHint,
               action: ElevatedButton(
                 onPressed: () => Navigator.of(context)
                     .pushNamedAndRemoveUntil('/', (_) => false),
-                child: const Text('Browse music'),
+                child: Text(context.l10n.browseMusic),
               ),
             ),
           );
         }
         return Scaffold(
           appBar: AppBar(
-            title: const Text('Now Playing'),
+            title: Text(context.l10n.nowPlayingTitle),
             actions: [
               IconButton(
                 icon: const Icon(Icons.stop),
-                tooltip: 'Stop playback (dismisses the player notification)',
+                tooltip: context.l10n.stopPlayback,
                 onPressed: () async {
                   await context.read<AppState>().stopPlayback();
                   if (context.mounted) {
                     showSnack(context,
-                        'Playback stopped — the player notification is dismissed.');
+                        context.l10n.playbackStopped);
                   }
                 },
               ),
               IconButton(
                 icon: const Icon(Icons.queue_music),
-                tooltip: 'Queue',
+                tooltip: context.l10n.queue,
                 onPressed: () => _showQueue(context, state),
               ),
             ],
@@ -129,7 +129,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
                             if (song.playCount > 0)
                               formatPlays(song.playCount),
                             if (song.likeCount > 0)
-                              '${formatCount(song.likeCount)} likes',
+                              context.l10n.likesCount(formatCount(song.likeCount)),
                           ].join(' • '),
                           style: const TextStyle(color: SbColors.muted),
                         ),
@@ -152,16 +152,16 @@ class _PlayerScreenState extends State<PlayerScreen> {
                             setState(() => _showLyrics = !_showLyrics),
                     icon: const Icon(Icons.lyrics_outlined, size: 18),
                     label: Text((song.lyrics ?? '').isEmpty
-                        ? 'No lyrics for this song'
+                        ? context.l10n.noLyrics
                         : _showLyrics
-                            ? 'Hide lyrics'
-                            : 'Show lyrics'),
+                            ? context.l10n.hideLyrics
+                            : context.l10n.showLyrics),
                   ),
                   const Spacer(),
                   TextButton.icon(
                     onPressed: () => _loadComments(song.id),
                     icon: const Icon(Icons.comment_outlined, size: 18),
-                    label: const Text('Comments'),
+                    label: Text(context.l10n.comments),
                   ),
                 ],
               ),
@@ -175,7 +175,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
                   child: Text(song.lyrics!),
                 ),
               const SizedBox(height: 8),
-              const Text('Comments',
+              Text(context.l10n.comments,
                   style:
                       TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
               const SizedBox(height: 8),
@@ -200,9 +200,9 @@ class _PlayerScreenState extends State<PlayerScreen> {
               message: _commentsError!,
               onRetry: () => _loadComments(song.id))
         else if (_comments.isEmpty)
-          const Padding(
+          Padding(
             padding: EdgeInsets.symmetric(vertical: 12),
-            child: Text('No comments yet — be the first to say something.',
+            child: Text(context.l10n.noComments,
                 style: TextStyle(color: SbColors.muted)),
           )
         else
@@ -241,8 +241,8 @@ class _PlayerScreenState extends State<PlayerScreen> {
                           icon: const Icon(Icons.delete_outline, size: 18),
                           onPressed: () async {
                             final ok = await confirmDialog(context,
-                                title: 'Delete comment',
-                                message: 'Delete this comment?');
+                                title: context.l10n.deleteComment,
+                                message: context.l10n.deleteCommentConfirm);
                             if (ok) {
                               try {
                                 await state.api.deleteComment(c.id);
@@ -265,8 +265,8 @@ class _PlayerScreenState extends State<PlayerScreen> {
             Expanded(
               child: TextField(
                 controller: _commentController,
-                decoration: const InputDecoration(
-                    hintText: 'Write a comment… (max 500 characters)'),
+                decoration: InputDecoration(
+                    hintText: context.l10n.writeComment),
                 maxLength: 500,
               ),
             ),
@@ -278,7 +278,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
                 final text = _commentController.text.trim();
                 if (text.isEmpty) return;
                 if (state.user == null) {
-                  showSnack(context, 'Log in to comment.');
+                  showSnack(context, context.l10n.loginToComment);
                   return;
                 }
                 try {
@@ -306,9 +306,9 @@ class _PlayerScreenState extends State<PlayerScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Padding(
+            Padding(
               padding: EdgeInsets.all(16),
-              child: Text('Up next',
+              child: Text(context.l10n.upNext,
                   style:
                       TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
             ),

@@ -59,7 +59,7 @@ class _GitHubOAuthScreenState extends State<GitHubOAuthScreen> {
           onWebResourceError: (err) {
             if (mounted) {
               setState(() => _note =
-                  'Could not load the sign-in page (${err.description}). Check your connection and try again.');
+                  context.l10n.oauthLoadFailed(err.description));
             }
           },
         ),
@@ -101,7 +101,7 @@ class _GitHubOAuthScreenState extends State<GitHubOAuthScreen> {
       setState(() {
         _busy = false;
         _note =
-            'The server is starting or updating right now. Wait a moment and tap Retry — the GitHub page opens inside the app.';
+            context.l10n.oauthServerStarting;
       });
       return;
     }
@@ -162,7 +162,7 @@ class _GitHubOAuthScreenState extends State<GitHubOAuthScreen> {
           setState(() {
             _checking = false;
             _note =
-                'GitHub sign-in did not create a session. Please try again.';
+                context.l10n.oauthNoSession;
           });
         }
         return;
@@ -185,7 +185,7 @@ class _GitHubOAuthScreenState extends State<GitHubOAuthScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Sign in with GitHub')),
+      appBar: AppBar(title: Text(context.l10n.oauthTitle)),
       body: !_webViewReady
           ? Center(
               child: Padding(
@@ -201,7 +201,7 @@ class _GitHubOAuthScreenState extends State<GitHubOAuthScreen> {
                               const TextStyle(color: SbColors.danger)),
                       const SizedBox(height: 16),
                       OutlinedButton(
-                          onPressed: _start, child: const Text('Retry')),
+                          onPressed: _start, child: Text(context.l10n.retry)),
                     ],
                   ],
                 ),
@@ -212,7 +212,7 @@ class _GitHubOAuthScreenState extends State<GitHubOAuthScreen> {
                 Padding(
                   padding: const EdgeInsets.all(12),
                   child: Text(
-                    'You will sign in with GitHub in this window. When GitHub sends you back to SoundBlast, the app signs you in automatically.',
+                    context.l10n.oauthInAppNote,
                     style: const TextStyle(
                         color: SbColors.muted, fontSize: 13),
                   ),
@@ -237,7 +237,7 @@ class _GitHubOAuthScreenState extends State<GitHubOAuthScreen> {
                             _controller.loadRequest(
                                 Uri.parse('$_site/api/auth/github'));
                           },
-                          child: const Text('Retry'),
+                          child: Text(context.l10n.retry),
                         ),
                       ],
                     ),
@@ -256,8 +256,8 @@ class _GitHubOAuthScreenState extends State<GitHubOAuthScreen> {
                                 height: 20,
                                 child: CircularProgressIndicator(
                                     strokeWidth: 2))
-                            : const Text(
-                                "I've signed in — check my account"),
+                            : Text(
+                                context.l10n.oauthCheckAccount),
                       ),
                     ),
                   ),

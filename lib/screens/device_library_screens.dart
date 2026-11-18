@@ -14,14 +14,19 @@ import '../widgets/common.dart';
 
 enum DeviceCategory { tracks, albums, artists, genres, folders, composers }
 
-String deviceCategoryLabel(DeviceCategory c) => switch (c) {
-      DeviceCategory.tracks => 'Tracks',
-      DeviceCategory.albums => 'Albums',
-      DeviceCategory.artists => 'Artists',
-      DeviceCategory.genres => 'Genres',
-      DeviceCategory.folders => 'Folders',
-      DeviceCategory.composers => 'Composers',
-    };
+/// Localized category name — takes the context because the label
+/// follows the app language (see AppState.appLocale).
+String deviceCategoryLabel(BuildContext context, DeviceCategory c) {
+  final l10n = context.l10n;
+  return switch (c) {
+    DeviceCategory.tracks => l10n.catTracks,
+    DeviceCategory.albums => l10n.catAlbums,
+    DeviceCategory.artists => l10n.catArtists,
+    DeviceCategory.genres => l10n.catGenres,
+    DeviceCategory.folders => l10n.catFolders,
+    DeviceCategory.composers => l10n.catComposers,
+  };
+}
 
 IconData deviceCategoryIcon(DeviceCategory c) => switch (c) {
       DeviceCategory.tracks => Icons.music_note,
@@ -80,12 +85,12 @@ Future<String?> askTextInput(
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Cancel'),
+          child: Text(context.l10n.cancel),
         ),
         TextButton(
           onPressed: () =>
               Navigator.of(context).pop(controller.text.trim()),
-          child: const Text('Save'),
+          child: Text(context.l10n.save),
         ),
       ],
     ),
@@ -102,12 +107,12 @@ class DeviceCategoryScreen extends StatelessWidget {
     final songs = context.watch<AppState>().deviceSongs;
     final groups = groupDeviceSongs(category, songs);
     return Scaffold(
-      appBar: AppBar(title: Text(deviceCategoryLabel(category))),
+      appBar: AppBar(title: Text(deviceCategoryLabel(context, category))),
       body: groups.isEmpty
-          ? const EmptyState(
+          ? EmptyState(
               icon: Icons.music_off,
-              title: 'Nothing here yet',
-              message: 'No on-device songs in this category.',
+              title: context.l10n.nothingHere,
+              message: context.l10n.noCategorySongs,
             )
           : ListView(
               children: groups.entries.map((e) {
@@ -173,7 +178,7 @@ class DeviceSongsScreen extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const ListTile(title: Text('Add to playlist')),
+            ListTile(title: Text(context.l10n.addToPlaylist)),
             ...store.items.map((p) => ListTile(
                   leading: const Icon(Icons.playlist_play,
                       color: SbColors.accent),
@@ -187,10 +192,10 @@ class DeviceSongsScreen extends StatelessWidget {
                 )),
             ListTile(
               leading: const Icon(Icons.add),
-              title: const Text('New playlist'),
+              title: Text(context.l10n.newPlaylist),
               onTap: () async {
                 final name = await askTextInput(context,
-                    title: 'New playlist', hint: 'Playlist name');
+                    title: context.l10n.newPlaylist, hint: context.l10n.playlistNameHint);
                 if (name == null || name.isEmpty) return;
                 final created = await store.create(name);
                 if (context.mounted) Navigator.of(context).pop(created);
@@ -215,10 +220,10 @@ class DeviceSongsScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(title: Text(title)),
       body: songs.isEmpty
-          ? const EmptyState(
+          ? EmptyState(
               icon: Icons.music_off,
-              title: 'No songs here',
-              message: 'Nothing on this device matches.',
+              title: context.l10n.noSongsHere,
+              message: context.l10n.nothingMatches,
             )
           : Column(
               children: [
@@ -231,7 +236,7 @@ class DeviceSongsScreen extends StatelessWidget {
                         child: ElevatedButton.icon(
                           onPressed: () => _playAll(context),
                           icon: const Icon(Icons.play_arrow),
-                          label: const Text('Play all'),
+                          label: Text(context.l10n.playAll),
                         ),
                       ),
                       const SizedBox(width: 12),
@@ -240,7 +245,7 @@ class DeviceSongsScreen extends StatelessWidget {
                           onPressed: () =>
                               _playAll(context, shuffled: true),
                           icon: const Icon(Icons.shuffle),
-                          label: const Text('Shuffle'),
+                          label: Text(context.l10n.shuffle),
                         ),
                       ),
                     ],
@@ -293,15 +298,15 @@ class LocalPlaylistDetailScreen extends StatelessWidget {
             onSelected: (v) async {
               if (v == 'rename') {
                 final name = await askTextInput(context,
-                    title: 'Rename playlist',
-                    hint: 'Playlist name',
+                    title: context.l10n.renamePlaylist,
+                    hint: context.l10n.playlistNameHint,
                     initial: playlist.name);
                 if (name != null && name.isNotEmpty) {
                   await state.localPlaylists.rename(playlist, name);
                 }
               } else if (v == 'delete') {
                 final ok = await confirmDialog(context,
-                    title: 'Delete playlist',
+                    title: context.l10n.deletePlaylist,
                     message:
                         'Delete "${playlist.name}"? The songs stay on this device.');
                 if (ok && context.mounted) {
@@ -310,17 +315,17 @@ class LocalPlaylistDetailScreen extends StatelessWidget {
                 }
               }
             },
-            itemBuilder: (_) => const [
-              PopupMenuItem(value: 'rename', child: Text('Rename')),
-              PopupMenuItem(value: 'delete', child: Text('Delete')),
+            itemBuilder: (_) => [
+              PopupMenuItem(value: 'rename', child: Text(context.l10n.rename)),
+              PopupMenuItem(value: 'delete', child: Text(context.l10n.delete)),
             ],
           ),
         ],
       ),
       body: songs.isEmpty
-          ? const EmptyState(
+          ? EmptyState(
               icon: Icons.playlist_remove,
-              title: 'No songs yet',
+              title: context.l10n.noSongsYet,
               message:
                   'Add songs from the on-device library (⋮ on any song).',
             )
@@ -338,7 +343,7 @@ class LocalPlaylistDetailScreen extends StatelessWidget {
                             fromQueue: queue);
                       },
                       icon: const Icon(Icons.play_arrow),
-                      label: const Text('Play all'),
+                      label: Text(context.l10n.playAll),
                     ),
                   ),
                 ),

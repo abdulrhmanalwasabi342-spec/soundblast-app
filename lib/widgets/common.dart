@@ -2,6 +2,12 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 
 import '../api/models.dart';
+import '../l10n/app_localizations.dart';
+
+/// Shorthand for the current language's strings: `context.l10n.home`.
+extension L10n on BuildContext {
+  AppLocalizations get l10n => AppLocalizations.of(this)!;
+}
 
 /// SoundBlast dark theme — read exactly from the website
 /// (client/src/index.css + the screens):

@@ -77,7 +77,7 @@ class _SearchScreenState extends State<SearchScreen> {
     final hasQuery = _controller.text.trim().isNotEmpty;
     return Scaffold(
       appBar: AppBar(
-          leading: const DrawerMenuButton(), title: const Text('Search')),
+          leading: const DrawerMenuButton(), title: Text(context.l10n.search)),
       body: Column(
         children: [
           Padding(
@@ -119,11 +119,11 @@ class _SearchScreenState extends State<SearchScreen> {
             child: _result == null
                 ? ListView(
                     children: [
-                      const SectionHeader(title: 'Browse genres'),
+                      SectionHeader(title: context.l10n.browseGenres),
                       if (_genres.isEmpty)
-                        const Padding(
+                        Padding(
                           padding: EdgeInsets.symmetric(horizontal: 16),
-                          child: Text('No genres yet — the library is empty.',
+                          child: Text(context.l10n.noGenresEmpty,
                               style: TextStyle(color: SbColors.muted)),
                         )
                       else
@@ -144,28 +144,28 @@ class _SearchScreenState extends State<SearchScreen> {
                                 .toList(),
                           ),
                         ),
-                      const SectionHeader(title: 'Quick links'),
+                      SectionHeader(title: context.l10n.quickLinks),
                       ListTile(
                         leading: const Icon(Icons.trending_up),
-                        title: const Text('Trending'),
+                        title: Text(context.l10n.trending),
                         onTap: () =>
                             Navigator.of(context).pushNamed('/trending'),
                       ),
                       ListTile(
                         leading: const Icon(Icons.explore),
-                        title: const Text('Discover'),
+                        title: Text(context.l10n.navDiscover),
                         onTap: () =>
                             Navigator.of(context).pushNamed('/discover'),
                       ),
                       ListTile(
                         leading: const Icon(Icons.people),
-                        title: const Text('Artists'),
+                        title: Text(context.l10n.artists),
                         onTap: () =>
                             Navigator.of(context).pushNamed('/artists'),
                       ),
                       ListTile(
                         leading: const Icon(Icons.album),
-                        title: const Text('Albums'),
+                        title: Text(context.l10n.navAlbums),
                         onTap: () =>
                             Navigator.of(context).pushNamed('/albums'),
                       ),
@@ -174,7 +174,7 @@ class _SearchScreenState extends State<SearchScreen> {
                 : ListView(
                     children: [
                       if (_result!.songs.isNotEmpty) ...[
-                        const SectionHeader(title: 'Songs'),
+                        SectionHeader(title: context.l10n.songs),
                         ..._result!.songs.map((s) => SongTile(
                               song: s,
                               onTap: () => state.playSong(s,
@@ -185,7 +185,7 @@ class _SearchScreenState extends State<SearchScreen> {
                             )),
                       ],
                       if (_result!.artists.isNotEmpty) ...[
-                        const SectionHeader(title: 'Artists'),
+                        SectionHeader(title: context.l10n.artists),
                         SizedBox(
                           height: 168,
                           child: ListView.separated(
@@ -210,7 +210,7 @@ class _SearchScreenState extends State<SearchScreen> {
                         ),
                       ],
                       if (_result!.genres.isNotEmpty) ...[
-                        const SectionHeader(title: 'Genres'),
+                        SectionHeader(title: context.l10n.genres),
                         Padding(
                           padding:
                               const EdgeInsets.symmetric(horizontal: 16),
@@ -233,7 +233,7 @@ class _SearchScreenState extends State<SearchScreen> {
                           _result!.genres.isEmpty)
                         EmptyState(
                           icon: Icons.search_off,
-                          title: 'No results',
+                          title: context.l10n.noResults,
                           message:
                               'Nothing matches "${_controller.text.trim()}" yet. Try a different song, artist or genre.',
                         ),
@@ -283,7 +283,7 @@ class _LibraryScreenState extends State<LibraryScreen>
     return Scaffold(
       appBar: AppBar(
         leading: const DrawerMenuButton(),
-        title: const Text('Your Library'),
+        title: Text(context.l10n.yourLibrary),
         bottom: TabBar(
           controller: _tab,
           indicatorColor: SbColors.accent,
@@ -319,7 +319,7 @@ class _LibraryScreenState extends State<LibraryScreen>
               backgroundColor: Colors.white,
               foregroundColor: Colors.black,
               icon: const Icon(Icons.add),
-              label: const Text('New playlist'),
+              label: Text(context.l10n.newPlaylist),
             )
           : null,
     );
@@ -328,11 +328,11 @@ class _LibraryScreenState extends State<LibraryScreen>
   Widget _loginPrompt(BuildContext context) {
     return EmptyState(
       icon: Icons.lock_outline,
-      title: 'Log in to see your library',
-      message: 'Liked songs, favorites and playlists live in your account.',
+      title: context.l10n.libraryLoginTitle,
+      message: context.l10n.libraryLoginMessage,
       action: ElevatedButton(
         onPressed: () => Navigator.of(context).pushNamed('/login'),
-        child: const Text('Log in'),
+        child: Text(context.l10n.login),
       ),
     );
   }
@@ -362,9 +362,9 @@ class _LibraryScreenState extends State<LibraryScreen>
   Widget _downloadedTab(BuildContext context, AppState state) {
     return ListView(
       children: [
-        const SectionHeader(
-            title: 'Downloaded from SoundBlast',
-            subtitle: 'Saved in the app — plays without internet'),
+        SectionHeader(
+            title: context.l10n.downloadedTitle,
+            subtitle: context.l10n.downloadedSubtitle),
         if (state.downloads.items.isEmpty)
           const Padding(
             padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -409,7 +409,7 @@ class _LibraryScreenState extends State<LibraryScreen>
                     tooltip: 'Delete download',
                     onPressed: () async {
                       final ok = await confirmDialog(context,
-                          title: 'Delete download',
+                          title: context.l10n.deleteDownload,
                           message:
                               'Delete the offline copy of "${d.title}"? The song stays on SoundBlast.');
                       if (ok) {
@@ -421,9 +421,9 @@ class _LibraryScreenState extends State<LibraryScreen>
               ),
             );
           }),
-        const SectionHeader(
-            title: 'On this device',
-            subtitle: 'Audio files already on your phone'),
+        SectionHeader(
+            title: context.l10n.onDeviceTitle,
+            subtitle: context.l10n.onDeviceSubtitle),
         _onDeviceSection(context, state),
         const SizedBox(height: 32),
       ],
@@ -440,21 +440,21 @@ class _LibraryScreenState extends State<LibraryScreen>
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
           child: Row(
             children: [
-              const Expanded(
-                child: Text('My playlists (offline)',
+              Expanded(
+                child: Text(context.l10n.myPlaylistsOffline,
                     style:
                         TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
               ),
               TextButton.icon(
                 onPressed: () async {
                   final name = await askTextInput(context,
-                      title: 'New playlist', hint: 'Playlist name');
+                      title: context.l10n.newPlaylist, hint: context.l10n.playlistNameHint);
                   if (name != null && name.isNotEmpty) {
                     await store.create(name);
                   }
                 },
                 icon: const Icon(Icons.add, size: 18),
-                label: const Text('New'),
+                label: Text(context.l10n.newLabel),
               ),
             ],
           ),
@@ -535,9 +535,6 @@ class _LibraryScreenState extends State<LibraryScreen>
                 final count = c == DeviceCategory.tracks
                     ? state.deviceSongs.length
                     : groupDeviceSongs(c, state.deviceSongs).length;
-                final unit = c == DeviceCategory.tracks
-                    ? 'songs'
-                    : deviceCategoryLabel(c).toLowerCase();
                 return ListTile(
                   leading: Container(
                     width: 48,
@@ -549,8 +546,16 @@ class _LibraryScreenState extends State<LibraryScreen>
                     child: Icon(deviceCategoryIcon(c),
                         color: SbColors.accent),
                   ),
-                  title: Text(deviceCategoryLabel(c)),
-                  subtitle: Text('$count $unit'),
+                  title: Text(deviceCategoryLabel(context, c)),
+                  subtitle: Text(switch (c) {
+                    DeviceCategory.tracks => context.l10n.songsCount(count),
+                    DeviceCategory.albums => context.l10n.albumsCount(count),
+                    DeviceCategory.artists => context.l10n.artistsCount(count),
+                    DeviceCategory.genres => context.l10n.genresCount(count),
+                    DeviceCategory.folders => context.l10n.foldersCount(count),
+                    DeviceCategory.composers =>
+                      context.l10n.composersCount(count),
+                  }),
                   trailing: const Icon(Icons.chevron_right,
                       color: SbColors.muted),
                   onTap: () {
@@ -558,7 +563,7 @@ class _LibraryScreenState extends State<LibraryScreen>
                       Navigator.of(context).push(
                         MaterialPageRoute(
                           builder: (_) => DeviceSongsScreen(
-                              title: 'All tracks',
+                              title: context.l10n.allTracks,
                               songs: state.deviceSongs),
                         ),
                       );
@@ -598,7 +603,7 @@ class _LibraryScreenState extends State<LibraryScreen>
                   }
                 },
                 icon: const Icon(Icons.folder_open),
-                label: const Text('Browse songs on this device'),
+                label: Text(context.l10n.browseDeviceSongs),
               ),
               const SizedBox(height: 12),
               FutureBuilder<int>(
@@ -607,7 +612,7 @@ class _LibraryScreenState extends State<LibraryScreen>
                 builder: (context, askedSnap) {
                   if ((askedSnap.data ?? 0) >= 2) {
                     return PermissionFlow.permissionBlockedNote(
-                      title: 'Access to on-device songs is off',
+                      title: context.l10n.accessOffTitle,
                       body:
                           'You declined the audio permission twice, so SoundBlast will not ask again. You can still allow it any time in the app settings — downloaded SoundBlast songs keep working either way.',
                     );
@@ -626,12 +631,12 @@ class _LibraryScreenState extends State<LibraryScreen>
     if (state.playlists.isEmpty) {
       return EmptyState(
         icon: Icons.playlist_play,
-        title: 'No playlists yet',
-        message: 'Create a playlist and add songs to it.',
+        title: context.l10n.noPlaylists,
+        message: context.l10n.createPlaylistHint,
         action: ElevatedButton(
           onPressed: () =>
               Navigator.of(context).pushNamed('/playlists/create'),
-          child: const Text('Create playlist'),
+          child: Text(context.l10n.createPlaylist),
         ),
       );
     }
@@ -707,16 +712,16 @@ class _PlaylistsScreenState extends State<PlaylistsScreen> {
   Widget build(BuildContext context) {
     final state = context.watch<AppState>();
     return Scaffold(
-      appBar: AppBar(title: const Text('Playlists')),
+      appBar: AppBar(title: Text(context.l10n.navPlaylists)),
       body: state.user == null
           ? EmptyState(
               icon: Icons.lock_outline,
-              title: 'Log in to see playlists',
-              message: 'Playlists belong to your account.',
+              title: context.l10n.loginPlaylistsTitle,
+              message: context.l10n.loginPlaylistMessage,
               action: ElevatedButton(
                 onPressed: () =>
                     Navigator.of(context).pushNamed('/login'),
-                child: const Text('Log in'),
+                child: Text(context.l10n.login),
               ),
             )
           : _loading
@@ -726,13 +731,13 @@ class _PlaylistsScreenState extends State<PlaylistsScreen> {
                   : state.playlists.isEmpty
                       ? EmptyState(
                           icon: Icons.playlist_play,
-                          title: 'No playlists yet',
+                          title: context.l10n.noPlaylists,
                           message:
                               'Create your first playlist and add songs to it.',
                           action: ElevatedButton(
                             onPressed: () => Navigator.of(context)
                                 .pushNamed('/playlists/create'),
-                            child: const Text('Create playlist'),
+                            child: Text(context.l10n.createPlaylist),
                           ),
                         )
                       : RefreshIndicator(
@@ -769,7 +774,7 @@ class _PlaylistsScreenState extends State<PlaylistsScreen> {
               backgroundColor: Colors.white,
               foregroundColor: Colors.black,
               icon: const Icon(Icons.add),
-              label: const Text('New playlist'),
+              label: Text(context.l10n.newPlaylist),
             )
           : null,
     );
@@ -856,7 +861,7 @@ class _CreatePlaylistScreenState extends State<CreatePlaylistScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Create playlist')),
+      appBar: AppBar(title: Text(context.l10n.createPlaylist)),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
@@ -880,7 +885,7 @@ class _CreatePlaylistScreenState extends State<CreatePlaylistScreen> {
           if (_loadingSongs)
             const Center(child: CircularProgressIndicator())
           else if (_all.isEmpty)
-            const Text('No songs in the library yet.',
+            Text(context.l10n.noSongsInLibrary,
                 style: TextStyle(color: SbColors.muted))
           else
             ..._all.map((s) => CheckboxListTile(
@@ -906,7 +911,7 @@ class _CreatePlaylistScreenState extends State<CreatePlaylistScreen> {
                       width: 20,
                       height: 20,
                       child: CircularProgressIndicator(strokeWidth: 2))
-                  : Text('Create playlist${_picked.isEmpty ? ' (as draft)' : ''}'),
+                  : Text(_picked.isEmpty ? context.l10n.createPlaylistDraft : context.l10n.createPlaylist),
             ),
           ),
         ],
@@ -985,7 +990,7 @@ class _PlaylistDetailsScreenState extends State<PlaylistDetailsScreen> {
                   _rename();
                 } else if (v == 'delete') {
                   final ok = await confirmDialog(context,
-                      title: 'Delete playlist',
+                      title: context.l10n.deletePlaylist,
                       message:
                           'Delete "${_playlist!.name}"? The songs stay in the library.');
                   if (ok) {
@@ -999,9 +1004,9 @@ class _PlaylistDetailsScreenState extends State<PlaylistDetailsScreen> {
                   }
                 }
               },
-              itemBuilder: (_) => const [
-                PopupMenuItem(value: 'rename', child: Text('Rename')),
-                PopupMenuItem(value: 'delete', child: Text('Delete')),
+              itemBuilder: (_) => [
+                PopupMenuItem(value: 'rename', child: Text(context.l10n.rename)),
+                PopupMenuItem(value: 'delete', child: Text(context.l10n.delete)),
               ],
             ),
         ],
@@ -1009,12 +1014,12 @@ class _PlaylistDetailsScreenState extends State<PlaylistDetailsScreen> {
       body: needsLogin
           ? EmptyState(
               icon: Icons.lock_outline,
-              title: 'Log in to see this playlist',
-              message: 'Playlists belong to your account.',
+              title: context.l10n.loginPlaylistTitle,
+              message: context.l10n.loginPlaylistMessage,
               action: ElevatedButton(
                 onPressed: () =>
                     Navigator.of(context).pushNamed('/login'),
-                child: const Text('Log in'),
+                child: Text(context.l10n.login),
               ),
             )
           : _loading
@@ -1022,9 +1027,9 @@ class _PlaylistDetailsScreenState extends State<PlaylistDetailsScreen> {
               : _error != null
                   ? ErrorView(message: _error!, onRetry: _load)
                   : _playlist == null
-                      ? const EmptyState(
+                      ? EmptyState(
                           icon: Icons.playlist_remove,
-                      title: 'Playlist not found',
+                      title: context.l10n.playlistNotFound,
                       message:
                           'This playlist is private or no longer exists.',
                     )
@@ -1057,16 +1062,16 @@ class _PlaylistDetailsScreenState extends State<PlaylistDetailsScreen> {
                                         : () => state.playSong(_songs.first,
                                             fromQueue: _songs),
                                     icon: const Icon(Icons.play_arrow),
-                                    label: const Text('Play all'),
+                                    label: Text(context.l10n.playAll),
                                   ),
                                 ),
                               ],
                             ),
                           ),
                           if (_songs.isEmpty)
-                            const EmptyState(
+                            EmptyState(
                               icon: Icons.music_off_outlined,
-                              title: 'No songs yet',
+                              title: context.l10n.noSongsYet,
                               message:
                                   'Add songs from any song menu (⋮ → Add to playlist).',
                             )
@@ -1108,18 +1113,18 @@ class _PlaylistDetailsScreenState extends State<PlaylistDetailsScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: SbColors.surface,
-        title: const Text('Rename playlist'),
+        title: Text(context.l10n.renamePlaylist),
         content: TextField(
             controller: controller,
             decoration: const InputDecoration(labelText: 'Name')),
         actions: [
           TextButton(
               onPressed: () => Navigator.of(ctx).pop(),
-              child: const Text('Cancel')),
+              child: Text(context.l10n.cancel)),
           ElevatedButton(
               onPressed: () =>
                   Navigator.of(ctx).pop(controller.text.trim()),
-              child: const Text('Save')),
+              child: Text(context.l10n.save)),
         ],
       ),
     );

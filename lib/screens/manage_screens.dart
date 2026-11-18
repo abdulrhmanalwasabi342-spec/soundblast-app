@@ -160,6 +160,21 @@ class ProfileScreen extends StatelessWidget {
                   ),
                 const Divider(color: SbColors.border),
                 ListTile(
+                  leading: const Icon(Icons.language),
+                  title: Text(context.l10n.language),
+                  trailing: Text(
+                    state.appLocale == null
+                        ? context.l10n.languageSystem
+                        : state.appLocale!.languageCode == 'ar'
+                            ? context.l10n.languageArabic
+                            : context.l10n.languageEnglish,
+                    style: const TextStyle(
+                        color: SbColors.muted, fontWeight: FontWeight.w700),
+                  ),
+                  onTap: () => _showLanguageDialog(context, state),
+                ),
+                const Divider(color: SbColors.border),
+                ListTile(
                   leading: const Icon(Icons.info),
                   title: const Text('About SoundBlast'),
                   onTap: () => Navigator.of(context).pushNamed('/about'),
@@ -201,6 +216,49 @@ class ProfileScreen extends StatelessWidget {
                 const SizedBox(height: 32),
               ],
             ),
+    );
+  }
+
+  void _showLanguageDialog(BuildContext context, AppState state) {
+    final l10n = context.l10n;
+    final current = state.appLocale?.languageCode;
+    showDialog<void>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(l10n.language),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            RadioListTile<String?>(
+              title: Text(l10n.languageSystem),
+              value: null,
+              groupValue: current,
+              onChanged: (v) async {
+                Navigator.of(dialogContext).pop();
+                await state.setAppLocale(null);
+              },
+            ),
+            RadioListTile<String?>(
+              title: const Text('العربية'),
+              value: 'ar',
+              groupValue: current,
+              onChanged: (v) async {
+                Navigator.of(dialogContext).pop();
+                await state.setAppLocale(const Locale('ar'));
+              },
+            ),
+            RadioListTile<String?>(
+              title: const Text('English'),
+              value: 'en',
+              groupValue: current,
+              onChanged: (v) async {
+                Navigator.of(dialogContext).pop();
+                await state.setAppLocale(const Locale('en'));
+              },
+            ),
+          ],
+        ),
+      ),
     );
   }
 

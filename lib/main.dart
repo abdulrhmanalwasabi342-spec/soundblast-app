@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:just_audio_background/just_audio_background.dart';
 import 'package:provider/provider.dart';
 
+import 'l10n/app_localizations.dart';
 import 'api/models.dart';
 import 'screens/auth_screens.dart';
 import 'screens/browse_screens.dart';
@@ -56,6 +57,11 @@ class SoundBlastApp extends StatelessWidget {
           title: 'SoundBlast',
           debugShowCheckedModeBanner: false,
           theme: sbTheme(),
+          // Arabic + English: the locale follows AppState.appLocale (null =
+          // device language). RTL flips automatically for Arabic.
+          locale: state.appLocale,
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           home: !state.authChecked
               ? const Scaffold(
                   body: Center(child: CircularProgressIndicator()))

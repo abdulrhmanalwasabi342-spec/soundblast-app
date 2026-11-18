@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:ui' show Locale;
 
 import 'package:audio_session/audio_session.dart';
 import 'package:flutter/foundation.dart';
@@ -20,6 +21,23 @@ import '../services/local_playlists.dart';
 class AppState extends ChangeNotifier {
   final TrpcClient trpc = TrpcClient();
   late final SoundBlastApi api = SoundBlastApi(trpc);
+
+  /// App language: null = follow the device language (Arabic on an Arabic
+  /// phone, English otherwise). 'ar' / 'en' force that language. Persisted
+  /// in SharedPreferences as 'sb_locale'; the MaterialApp locale in main.dart
+  /// reads this, so changing it rebuilds the whole UI in the new language.
+  Locale? appLocale;
+
+  Future<void> setAppLocale(Locale? locale) async {
+    appLocale = locale;
+    final prefs = await SharedPreferences.getInstance();
+    if (locale == null) {
+      await prefs.remove('sb_locale');
+    } else {
+      await prefs.setString('sb_locale', locale.languageCode);
+    }
+    notifyListeners();
+  }
 
   /// Called by screens that obtain a fresh user (e.g. OAuth) so listeners
   /// update. (Direct `state.user = ...; state.notifyListeners()` from a
@@ -100,6 +118,12 @@ class AppState extends ChangeNotifier {
     await trpc.init();
     final prefs = await SharedPreferences.getInstance();
     onboarded = prefs.getBool('soundblast-onboarded') ?? false;
+    final localeRaw = prefs.getString('sb_locale');
+    appLocale = localeRaw == 'ar'
+        ? const Locale('ar')
+        : localeRaw == 'en'
+            ? const Locale('en')
+            : null;
     final homeRaw = prefs.getString('sb_cached_home');
     if (homeRaw != null) {
       try {

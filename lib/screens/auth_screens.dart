@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:provider/provider.dart';
 
+import '../l10n/app_localizations.dart';
 import '../state/app_state.dart';
 import '../widgets/auth_shell.dart';
 import '../widgets/common.dart';
@@ -23,26 +24,27 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   final _page = PageController();
   int _index = 0;
 
-  static const _pages = [
-    (
-      icon: Icons.music_note,
-      title: 'Feel the beat.',
-      body:
-          'SoundBlast is a home for independent music — discover new songs, follow the artists you love, and keep everything in one place.',
-    ),
-    (
-      icon: Icons.people,
-      title: 'Follow artists.',
-      body:
-          'Get notified when artists you follow release new songs and share posts. Your feed grows with the music you love.',
-    ),
-    (
-      icon: Icons.mic,
-      title: 'Are you an artist?',
-      body:
-          'Publish your own songs, build albums, and reach listeners — right from your phone. Sign up as an artist to start.',
-    ),
-  ];
+  /// Onboarding pages, built from the current language (not const, so
+  /// the language switch rebuilds them).
+  List<({IconData icon, String title, String body})> _pages(
+          AppLocalizations l) =>
+      [
+        (
+          icon: Icons.music_note,
+          title: l.onboardingBeat,
+          body: l.onboardingBeatBody,
+        ),
+        (
+          icon: Icons.people,
+          title: l.onboardingFollow,
+          body: l.onboardingFollowBody,
+        ),
+        (
+          icon: Icons.mic,
+          title: l.onboardingArtist,
+          body: l.onboardingArtistBody,
+        ),
+      ];
 
   @override
   void dispose() {
@@ -64,17 +66,17 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               alignment: Alignment.centerRight,
               child: TextButton(
                 onPressed: _enter,
-                child: const Text('Skip',
+                child: Text(context.l10n.skip,
                     style: TextStyle(color: SbColors.muted)),
               ),
             ),
             Expanded(
               child: PageView.builder(
                 controller: _page,
-                itemCount: _pages.length,
+                itemCount: _pages(context.l10n).length,
                 onPageChanged: (i) => setState(() => _index = i),
                 itemBuilder: (ctx, i) {
-                  final p = _pages[i];
+                  final p = _pages(context.l10n)[i];
                   return Padding(
                     padding: const EdgeInsets.all(32),
                     child: Column(
@@ -109,7 +111,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: List.generate(
-                _pages.length,
+                _pages(context.l10n).length,
                 (i) => Container(
                   margin: const EdgeInsets.symmetric(horizontal: 4),
                   width: _index == i ? 24 : 8,
@@ -130,7 +132,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 width: double.infinity,
                 child: ElevatedButton(
                   onPressed: () {
-                    if (_index < _pages.length - 1) {
+                    if (_index < _pages(context.l10n).length - 1) {
                       _page.nextPage(
                           duration: const Duration(milliseconds: 300),
                           curve: Curves.easeInOut);
@@ -139,7 +141,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     }
                   },
                   child: Text(
-                      _index < _pages.length - 1 ? 'Next' : 'Enter SoundBlast'),
+                      _index < _pages(context.l10n).length - 1 ? context.l10n.next : context.l10n.authEnter),
                 ),
               ),
             ),
@@ -149,7 +151,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 _enter();
                 Navigator.of(context).pushNamed('/login');
               },
-              child: const Text('I already have an account — Log in'),
+              child: Text(context.l10n.authAlreadyHaveAccount),
             ),
             const SizedBox(height: 24),
           ],
@@ -226,17 +228,17 @@ class _LoginScreenState extends State<LoginScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                const Center(
+                Center(
                   child: GradientText(
-                    'Welcome back.',
+                    context.l10n.authWelcomeBack,
                     style:
                         TextStyle(fontSize: 30, fontWeight: FontWeight.w900),
                   ),
                 ),
                 const SizedBox(height: 10),
-                const Center(
+                Center(
                   child: Text(
-                    'Log in to continue listening.',
+                    context.l10n.authLoginSub,
                     textAlign: TextAlign.center,
                     style: TextStyle(
                         color: Colors.white54, fontSize: 14, height: 1.5),
@@ -247,7 +249,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   AuthErrorBanner(_error!),
                   const SizedBox(height: 16),
                 ],
-                const AuthLabel('Email'),
+                AuthLabel(context.l10n.authEmail),
                 AuthTextField(
                   controller: _email,
                   icon: Icons.mail_outline,
@@ -256,7 +258,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   onSubmitted: _login,
                 ),
                 const SizedBox(height: 16),
-                const AuthLabel('Password'),
+                AuthLabel(context.l10n.authPassword),
                 AuthTextField(
                   controller: _password,
                   icon: Icons.lock_outline,
@@ -281,8 +283,8 @@ class _LoginScreenState extends State<LoginScreen> {
                   child: TextButton(
                     onPressed: () => Navigator.of(context)
                         .pushNamed('/forgot-password'),
-                    child: const Text(
-                      'Forgot password?',
+                    child: Text(
+                      context.l10n.authForgotPasswordQ,
                       style: TextStyle(
                         color: Color(0xFFF0ABFC),
                         fontWeight: FontWeight.w600,
@@ -292,30 +294,30 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
                 const SizedBox(height: 8),
                 AuthGradientButton(
-                  label: 'Log in',
+                  label: context.l10n.login,
                   icon: Icons.favorite,
                   busy: _busy,
                   onPressed: _login,
                 ),
                 const SizedBox(height: 20),
-                const AuthDivider('or continue with'),
+                AuthDivider(context.l10n.authOrContinue),
                 const SizedBox(height: 16),
                 AuthOutlineButton(
-                  label: 'Continue with GitHub',
+                  label: context.l10n.authContinueGithub,
                   icon: FontAwesomeIcons.github,
                   onPressed: () =>
                       Navigator.of(context).pushNamed('/oauth/github'),
                 ),
                 const SizedBox(height: 12),
                 AuthOutlineButton(
-                  label: 'Create a new account',
+                  label: context.l10n.authCreateNew,
                   icon: Icons.auto_awesome,
                   onPressed: () => Navigator.of(context)
                       .pushReplacementNamed('/signup'),
                 ),
                 const SizedBox(height: 12),
-                const GatedFeature(
-                  label: 'Continue with Google',
+                GatedFeature(
+                  label: context.l10n.authContinueGoogle,
                   reason: "Google sign-in isn't set up on the server yet.",
                   icon: FontAwesomeIcons.google,
                 ),
@@ -323,9 +325,9 @@ class _LoginScreenState extends State<LoginScreen> {
             ),
           ),
           const SizedBox(height: 20),
-          const Center(
+          Center(
             child: Text(
-              'SoundBlast · welcome back',
+              context.l10n.authWelcomeBackSub,
               style: TextStyle(color: Colors.white24, fontSize: 12),
             ),
           ),
@@ -373,7 +375,7 @@ class _SignupScreenState extends State<SignupScreen> {
     final bytes = file.bytes;
     if (bytes == null) return;
     if (bytes.length > 5 * 1024 * 1024) {
-      showSnack(context, 'The photo exceeds 5MB.');
+      showSnack(context, context.l10n.authPhotoTooBig);
       return;
     }
     // Show the photo immediately — the upload runs in the background and
@@ -407,7 +409,7 @@ class _SignupScreenState extends State<SignupScreen> {
     } catch (e) {
       if (mounted) {
         showSnack(context,
-            'Photo upload failed — it will be retried when you create the account.');
+            context.l10n.authPhotoRetry);
       }
       return null;
     }
@@ -419,16 +421,16 @@ class _SignupScreenState extends State<SignupScreen> {
         _email.text.trim().isEmpty ||
         _password.text.length < 8) {
       setState(() => _error =
-          'Enter your name, a valid email, and a password of at least 8 characters.');
+          context.l10n.authEnterDetails);
       return;
     }
     if (_role == 'artist' && _stageName.text.trim().isEmpty) {
-      setState(() => _error = 'Artists need a stage name.');
+      setState(() => _error = context.l10n.authArtistNeedsStage);
       return;
     }
     if (!_policy) {
       setState(
-          () => _error = 'Please accept the Terms & Privacy Policy.');
+          () => _error = context.l10n.authAcceptTermsFirst);
       return;
     }
     setState(() {
@@ -495,17 +497,17 @@ class _SignupScreenState extends State<SignupScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                const Center(
+                Center(
                   child: GradientText(
-                    'Join SoundBlast',
+                    context.l10n.joinTitle,
                     style:
                         TextStyle(fontSize: 30, fontWeight: FontWeight.w900),
                   ),
                 ),
                 const SizedBox(height: 10),
-                const Center(
+                Center(
                   child: Text(
-                    'Create your account to start listening.',
+                    context.l10n.joinSubtitle,
                     textAlign: TextAlign.center,
                     style: TextStyle(
                         color: Colors.white54, fontSize: 14, height: 1.5),
@@ -537,7 +539,7 @@ class _SignupScreenState extends State<SignupScreen> {
                 const SizedBox(height: 8),
                 Center(
                   child: Text(
-                      _avatarName ?? 'Add a profile photo (optional)',
+                      _avatarName ?? context.l10n.authAddPhoto,
                       style: const TextStyle(
                           color: Colors.white54, fontSize: 13)),
                 ),
@@ -546,14 +548,14 @@ class _SignupScreenState extends State<SignupScreen> {
                   AuthErrorBanner(_error!),
                   const SizedBox(height: 16),
                 ],
-                const AuthLabel('Your name'),
+                AuthLabel(context.l10n.authYourName),
                 AuthTextField(
                   controller: _name,
                   icon: Icons.person_outline,
-                  hint: 'Your name',
+                  hint: context.l10n.authYourName,
                 ),
                 const SizedBox(height: 16),
-                const AuthLabel('Email'),
+                AuthLabel(context.l10n.authEmail),
                 AuthTextField(
                   controller: _email,
                   icon: Icons.mail_outline,
@@ -561,11 +563,11 @@ class _SignupScreenState extends State<SignupScreen> {
                   keyboardType: TextInputType.emailAddress,
                 ),
                 const SizedBox(height: 16),
-                const AuthLabel('Password'),
+                AuthLabel(context.l10n.authPassword),
                 AuthTextField(
                   controller: _password,
                   icon: Icons.lock_outline,
-                  hint: 'At least 8 characters',
+                  hint: context.l10n.authPasswordHint,
                   obscureText: !_showPassword,
                   suffix: IconButton(
                     icon: Icon(
@@ -580,18 +582,18 @@ class _SignupScreenState extends State<SignupScreen> {
                   ),
                 ),
                 const SizedBox(height: 16),
-                const Text('I am joining as:',
+                Text(context.l10n.authJoiningAs,
                     style: TextStyle(fontWeight: FontWeight.w600)),
                 const SizedBox(height: 8),
                 SegmentedButton<String>(
-                  segments: const [
+                  segments: [
                     ButtonSegment(
                         value: 'user',
-                        label: Text('Listener'),
+                        label: Text(context.l10n.authListener),
                         icon: Icon(Icons.headphones)),
                     ButtonSegment(
                         value: 'artist',
-                        label: Text('Artist'),
+                        label: Text(context.l10n.authArtist),
                         icon: Icon(Icons.mic)),
                   ],
                   selected: {_role},
@@ -600,18 +602,18 @@ class _SignupScreenState extends State<SignupScreen> {
                 ),
                 if (_role == 'artist') ...[
                   const SizedBox(height: 16),
-                  const AuthLabel('Stage name'),
+                  AuthLabel(context.l10n.authStageName),
                   AuthTextField(
                     controller: _stageName,
                     icon: Icons.mic,
-                    hint: 'Stage name',
+                    hint: context.l10n.authStageName,
                   ),
                 ],
                 const SizedBox(height: 16),
                 CheckboxListTile(
                   value: _policy,
                   onChanged: (v) => setState(() => _policy = v ?? false),
-                  title: const Text('I accept the Terms & Privacy Policy',
+                  title: Text(context.l10n.authAcceptTerms,
                       style: TextStyle(fontSize: 14)),
                   controlAffinity: ListTileControlAffinity.leading,
                   contentPadding: EdgeInsets.zero,
@@ -620,44 +622,44 @@ class _SignupScreenState extends State<SignupScreen> {
                   onPressed: () =>
                       Navigator.of(context).pushNamed('/policy'),
                   child:
-                      const Text('Read the Terms, Privacy & Permissions'),
+                      Text(context.l10n.authReadTerms),
                 ),
                 const SizedBox(height: 8),
                 AuthGradientButton(
-                  label: 'Create account',
+                  label: context.l10n.authCreateAccount,
                   icon: Icons.auto_awesome,
                   busy: _busy,
                   onPressed: _signup,
                 ),
                 const SizedBox(height: 20),
-                const AuthDivider('or sign up with'),
+                AuthDivider(context.l10n.authOrSignupWith),
                 const SizedBox(height: 16),
                 AuthOutlineButton(
-                  label: 'Continue with GitHub',
+                  label: context.l10n.authContinueGithub,
                   icon: FontAwesomeIcons.github,
                   onPressed: () =>
                       Navigator.of(context).pushNamed('/oauth/github'),
                 ),
                 const SizedBox(height: 12),
                 AuthOutlineButton(
-                  label: 'Log in',
+                  label: context.l10n.login,
                   icon: Icons.login,
                   onPressed: () => Navigator.of(context)
                       .pushReplacementNamed('/login'),
                 ),
                 const SizedBox(height: 12),
-                const GatedFeature(
-                  label: 'Continue with Google',
-                  reason: "Google sign-up isn't set up on the server yet.",
+                GatedFeature(
+                  label: context.l10n.authContinueGoogle,
+                  reason: context.l10n.authGoogleNotSetup,
                   icon: FontAwesomeIcons.google,
                 ),
               ],
             ),
           ),
           const SizedBox(height: 20),
-          const Center(
+          Center(
             child: Text(
-              'SoundBlast · join the music',
+              context.l10n.authJoinSub,
               style: TextStyle(color: Colors.white24, fontSize: 12),
             ),
           ),
@@ -677,7 +679,7 @@ class ForgotPasswordScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Forgot password')),
+      appBar: AppBar(title: Text(context.l10n.authForgotPassword)),
       body: Padding(
         padding: const EdgeInsets.all(24),
         child: Column(
@@ -687,7 +689,7 @@ class ForgotPasswordScreen extends StatelessWidget {
             const Icon(Icons.lock_reset,
                 size: 56, color: SbColors.accent),
             const SizedBox(height: 24),
-            const Text('Reset your password',
+            Text(context.l10n.resetPassword,
                 style: TextStyle(fontSize: 24, fontWeight: FontWeight.w800)),
             const SizedBox(height: 12),
             const Text(
@@ -704,7 +706,7 @@ class ForgotPasswordScreen extends StatelessWidget {
               width: double.infinity,
               child: ElevatedButton(
                 onPressed: () => Navigator.of(context).pushNamed('/contact'),
-                child: const Text('Contact support'),
+                child: Text(context.l10n.authContactSupport),
               ),
             ),
             const SizedBox(height: 12),
@@ -712,7 +714,7 @@ class ForgotPasswordScreen extends StatelessWidget {
               width: double.infinity,
               child: TextButton(
                 onPressed: () => Navigator.of(context).pop(),
-                child: const Text('Back to log in'),
+                child: Text(context.l10n.authBackToLogin),
               ),
             ),
           ],
