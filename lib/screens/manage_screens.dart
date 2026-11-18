@@ -362,12 +362,6 @@ class _UploadSongScreenState extends State<UploadSongScreen> {
     if (result == null || result.files.isEmpty) return;
     final file = result.files.first;
     setState(() => _image = file);
-    // Save it on this phone right away: the server upload needs storage
-    // that is not configured yet, and a failed upload must never lose
-    // the photo.
-    if (file.bytes != null) {
-      await context.read<AppState>().saveLocalProfilePhoto(file.bytes!);
-    }
   }
 
   Future<void> _publish() async {
@@ -381,8 +375,14 @@ class _UploadSongScreenState extends State<UploadSongScreen> {
           context.l10n.onlyArtistsUpload);
       return;
     }
-    if (_title.text.trim().isEmpty || _audio == null || _image == null) {
-      showSnack(context, context.l10n.uploadMissingFields);
+    final missing = <String>[
+      if (_title.text.trim().isEmpty) context.l10n.missingTitle,
+      if (_audio == null) context.l10n.missingAudio,
+      if (_image == null) context.l10n.missingArtwork,
+    ];
+    if (missing.isNotEmpty) {
+      showSnack(context,
+          context.l10n.addMissingToContinue(missing.join('، ')));
       return;
     }
     if (!_rights) {
@@ -429,7 +429,13 @@ class _UploadSongScreenState extends State<UploadSongScreen> {
       showSnack(context, context.l10n.songPublished);
       Navigator.of(context).pop();
     } catch (e) {
-      if (mounted) showSnack(context, e.toString());
+      if (!mounted) return;
+      final msg = e.toString();
+      if (msg.toLowerCase().contains('storage')) {
+        showSnack(context, context.l10n.uploadStorageUnavailable);
+      } else {
+        showSnack(context, msg);
+      }
     } finally {
       if (mounted) {
         setState(() {
@@ -1616,12 +1622,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     if (result == null || result.files.isEmpty) return;
     final file = result.files.first;
     setState(() => _image = file);
-    // Save it on this phone right away: the server upload needs storage
-    // that is not configured yet, and a failed upload must never lose
-    // the photo.
-    if (file.bytes != null) {
-      await context.read<AppState>().saveLocalProfilePhoto(file.bytes!);
-    }
   }
 
   Future<void> _save() async {

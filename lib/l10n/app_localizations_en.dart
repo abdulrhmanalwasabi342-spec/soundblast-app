@@ -38,6 +38,11 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String addMissingToContinue(Object missing) {
+    return 'Add $missing to continue.';
+  }
+
+  @override
   String get addSongsFromMenu => 'Add songs from any song menu (⋮ → Add to playlist).';
 
   @override
@@ -882,6 +887,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get messageLengthHint => 'At least 10 characters, up to 2000.';
 
   @override
+  String get missingArtwork => 'a cover image';
+
+  @override
+  String get missingAudio => 'an audio file';
+
+  @override
+  String get missingTitle => 'the song title';
+
+  @override
   String get moodsGenres => 'Moods & genres';
 
   @override
@@ -1714,6 +1728,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get uploadSong => 'Upload a song';
+
+  @override
+  String get uploadStorageUnavailable => 'Uploads are unavailable right now: the server storage isn\'t set up yet.';
 
   @override
   String get uploadingArtwork => 'Uploading artwork…';

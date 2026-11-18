@@ -149,6 +149,12 @@ abstract class AppLocalizations {
   /// **'Activation: {status}'**
   String activationStatus(String status);
 
+  /// No description provided for @addMissingToContinue.
+  ///
+  /// In en, this message translates to:
+  /// **'Add {missing} to continue.'**
+  String addMissingToContinue(Object missing);
+
   /// No description provided for @addSongsFromMenu.
   ///
   /// In en, this message translates to:
@@ -1678,6 +1684,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'At least 10 characters, up to 2000.'**
   String get messageLengthHint;
+
+  /// No description provided for @missingArtwork.
+  ///
+  /// In en, this message translates to:
+  /// **'a cover image'**
+  String get missingArtwork;
+
+  /// No description provided for @missingAudio.
+  ///
+  /// In en, this message translates to:
+  /// **'an audio file'**
+  String get missingAudio;
+
+  /// No description provided for @missingTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'the song title'**
+  String get missingTitle;
 
   /// No description provided for @moodsGenres.
   ///
@@ -3268,6 +3292,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Upload a song'**
   String get uploadSong;
+
+  /// No description provided for @uploadStorageUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Uploads are unavailable right now: the server storage isn\'t set up yet.'**
+  String get uploadStorageUnavailable;
 
   /// No description provided for @uploadingArtwork.
   ///

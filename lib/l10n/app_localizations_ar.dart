@@ -38,6 +38,11 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
+  String addMissingToContinue(Object missing) {
+    return 'أضف $missing للمتابعة.';
+  }
+
+  @override
   String get addSongsFromMenu => 'أضف أغانٍ من قائمة أي أغنية (⋮ ← إضافة إلى قائمة تشغيل).';
 
   @override
@@ -897,6 +902,15 @@ class AppLocalizationsAr extends AppLocalizations {
   String get messageLengthHint => '10 أحرف على الأقل، حتى 2000 حرف.';
 
   @override
+  String get missingArtwork => 'صورة الغلاف';
+
+  @override
+  String get missingAudio => 'الملف الصوتي';
+
+  @override
+  String get missingTitle => 'عنوان الأغنية';
+
+  @override
   String get moodsGenres => 'المزاج والأنواع';
 
   @override
@@ -1732,6 +1746,9 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get uploadSong => 'رفع أغنية';
+
+  @override
+  String get uploadStorageUnavailable => 'الرفع غير متاح حاليًا: تخزين الخادم غير مهيأ بعد.';
 
   @override
   String get uploadingArtwork => 'جارٍ رفع صورة الغلاف…';

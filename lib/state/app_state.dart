@@ -509,9 +509,21 @@ class AppState extends ChangeNotifier {
     if (!_playerReady) return;
     await _ensureNotificationPermissionOnce();
     final withPath = song.copyWithLocalPath(localPath);
-    final q = (fromQueue ?? [song])
-        .map((s) => s.id == song.id ? withPath : s)
-        .toList();
+    // Device songs in the queue carry no URI (toSong drops it), so only
+    // the tapped song could ever play: when its file failed, the
+    // skip-fallback and Next/Previous had nothing to try and the tap died
+    // with a frozen timer. Resolve every device song from the scanned
+    // library (song id -> content URI) so the whole queue is playable.
+    // Downloaded songs already carry their path and are left untouched.
+    final deviceUris = <int, String>{
+      for (final d in deviceSongs) -1000000 - d.id: d.playableUri,
+    };
+    final q = (fromQueue ?? [song]).map((s) {
+      if (s.id == song.id) return withPath;
+      final uri = deviceUris[s.id];
+      if (uri != null) return s.copyWithLocalPath(uri);
+      return s;
+    }).toList();
     var idx = q.indexWhere((s) => s.id == song.id);
     if (idx < 0) {
       q.insert(0, withPath);
