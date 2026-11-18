@@ -40,14 +40,6 @@
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
-            <!-- GitHub sign-in (flutter_web_auth_2): the system browser
-                 returns to the app on soundblast://oauth?code=… -->
-            <intent-filter>
-                <action android:name="android.intent.action.VIEW" />
-                <category android:name="android.intent.category.DEFAULT" />
-                <category android:name="android.intent.category.BROWSABLE" />
-                <data android:scheme="soundblast" />
-            </intent-filter>
         </activity>
         <!-- Background playback (just_audio_background / audio_service):
              the foreground media service + media-button receiver. The
