@@ -147,7 +147,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get artistPageMissing => 'صفحة هذا الفنان غير موجودة.';
 
   @override
-  String artistStats(String followers, String songs, String plays) {
+  String artistStats(String followers, String plays, String songs) {
     return '$followers متابع • $songs أغنية • $plays تشغيل';
   }
 
@@ -312,6 +312,9 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get cancel => 'إلغاء';
+
+  @override
+  String get cannotPlaySong => 'تعذّر تشغيل هذه الأغنية. تحقّق من الاتصال وحاول مجددًا.';
 
   @override
   String get catAlbums => 'الألبومات';
@@ -1180,6 +1183,9 @@ class AppLocalizationsAr extends AppLocalizations {
   String get oauthUsers => 'مستخدمو OAuth';
 
   @override
+  String get offlineShowingCache => 'أنت غير متصل — نعرض آخر مكتبة محفوظة.';
+
+  @override
   String get offlineShowingSaved => 'أنت بدون إنترنت — نعرض آخر مكتبة محفوظة.';
 
   @override
@@ -1187,6 +1193,9 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get onDeviceTitle => 'على هذا الجهاز';
+
+  @override
+  String get onThisDevice => 'على هذا الجهاز';
 
   @override
   String get onboardingArtist => 'هل أنت فنان؟';
@@ -1280,6 +1289,9 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get permissionsBody => 'يطلب التطبيق الوصول إلى التخزين فقط عندما تختار ملفًا صوتيًا أو صورة غلاف أو صورة شخصية للرفع. يستمر التشغيل أثناء وجود التطبيق في الخلفية حتى لا تنقطع موسيقاك.';
+
+  @override
+  String get photoSavedLocally => 'تم حفظ الصورة على هذا الهاتف، وستُزامَن مع ملفك عند جاهزية التخزين.';
 
   @override
   String get pickSongHint => 'اختر أغنية من الرئيسية أو اكتشف أو البحث لتبدأ الاستماع.';
@@ -1520,6 +1532,9 @@ class AppLocalizationsAr extends AppLocalizations {
   String get skip => 'تخطي';
 
   @override
+  String get songNoAudio => 'هذه الأغنية بلا ملف صوتي.';
+
+  @override
   String get songPublished => 'تم نشر الأغنية.';
 
   @override
@@ -1644,6 +1659,9 @@ class AppLocalizationsAr extends AppLocalizations {
   String get unknownAlbum => 'ألبوم غير معروف';
 
   @override
+  String get unknownArtist => 'فنان غير معروف';
+
+  @override
   String get unknownComposer => 'ملحن غير معروف';
 
   @override
@@ -1651,6 +1669,9 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get unknownGenre => 'نوع غير معروف';
+
+  @override
+  String get unknownTitle => 'عنوان غير معروف';
 
   @override
   String get unlikeAction => 'إلغاء الإعجاب';

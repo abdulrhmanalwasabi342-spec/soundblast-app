@@ -507,8 +507,12 @@ class _LibraryScreenState extends State<LibraryScreen>
         }
         if (snap.data == true) {
           if (!state.deviceSongsLoaded) {
+            final l10n = context.l10n;
             WidgetsBinding.instance.addPostFrameCallback((_) {
-              state.refreshDeviceSongs();
+              state.refreshDeviceSongs(
+                unknownTitle: l10n.unknownTitle,
+                unknownArtist: l10n.unknownArtist,
+              );
             });
             return const Padding(
               padding: EdgeInsets.all(16),
@@ -594,10 +598,14 @@ class _LibraryScreenState extends State<LibraryScreen>
               const SizedBox(height: 12),
               ElevatedButton.icon(
                 onPressed: () async {
+                  final l10n = context.l10n;
                   final granted =
                       await PermissionFlow.requestMedia(context);
                   if (granted) {
-                    await state.refreshDeviceSongs();
+                    await state.refreshDeviceSongs(
+                      unknownTitle: l10n.unknownTitle,
+                      unknownArtist: l10n.unknownArtist,
+                    );
                   } else {
                     if (context.mounted) setState(() {});
                   }

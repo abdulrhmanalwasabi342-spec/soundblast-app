@@ -144,7 +144,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get artistPageMissing => 'This artist page does not exist.';
 
   @override
-  String artistStats(String followers, String songs, String plays) {
+  String artistStats(String followers, String plays, String songs) {
     return '$followers followers • $songs songs • $plays plays';
   }
 
@@ -306,6 +306,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get cancel => 'Cancel';
+
+  @override
+  String get cannotPlaySong => 'Couldn\'t play this song. Check your connection and try again.';
 
   @override
   String get catAlbums => 'Albums';
@@ -1165,6 +1168,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get oauthUsers => 'OAuth users';
 
   @override
+  String get offlineShowingCache => 'You\'re offline — showing the last saved library.';
+
+  @override
   String get offlineShowingSaved => 'You are offline — showing the last saved library.';
 
   @override
@@ -1172,6 +1178,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get onDeviceTitle => 'On this device';
+
+  @override
+  String get onThisDevice => 'On this device';
 
   @override
   String get onboardingArtist => 'Are you an artist?';
@@ -1265,6 +1274,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get permissionsBody => 'The app asks for storage access only when you pick an audio file, artwork or profile photo to upload. Playback continues while the app is in the background so your music is not interrupted.';
+
+  @override
+  String get photoSavedLocally => 'Photo saved on this phone. It will sync to your profile when storage is ready.';
 
   @override
   String get pickSongHint => 'Pick a song from Home, Discover or Search to start listening.';
@@ -1505,6 +1517,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get skip => 'Skip';
 
   @override
+  String get songNoAudio => 'This song has no audio file.';
+
+  @override
   String get songPublished => 'Song published.';
 
   @override
@@ -1626,6 +1641,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get unknownAlbum => 'Unknown album';
 
   @override
+  String get unknownArtist => 'Unknown artist';
+
+  @override
   String get unknownComposer => 'Unknown composer';
 
   @override
@@ -1633,6 +1651,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get unknownGenre => 'Unknown genre';
+
+  @override
+  String get unknownTitle => 'Unknown title';
 
   @override
   String get unlikeAction => 'Unlike';

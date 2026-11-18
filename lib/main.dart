@@ -195,11 +195,17 @@ class AppShell extends StatefulWidget {
 
 class _AppShellState extends State<AppShell> {
   late int _index;
+  AppState? _state;
 
   @override
   void initState() {
     super.initState();
     _index = widget.initialTab;
+    // Playback failures surface here: a tap that does nothing is never
+    // silent — the state reports the failure code and the shell shows the
+    // localized message once.
+    _state = context.read<AppState>();
+    _state!.addListener(_onPlaybackError);
     // Notification permission is asked once, at first play (point of need),
     // never on launch — see PermissionFlow.
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -208,6 +214,27 @@ class _AppShellState extends State<AppShell> {
         return PermissionFlow.requestNotifications(context);
       };
     });
+  }
+
+  void _onPlaybackError() {
+    final state = _state;
+    if (state == null) return;
+    final code = state.playbackError;
+    if (code == null) return;
+    state.clearPlaybackError();
+    if (!mounted) return;
+    showSnack(
+      context,
+      code == 'noAudio'
+          ? context.l10n.songNoAudio
+          : context.l10n.cannotPlaySong,
+    );
+  }
+
+  @override
+  void dispose() {
+    _state?.removeListener(_onPlaybackError);
+    super.dispose();
   }
 
   List<Widget> get _tabs => const [
@@ -234,15 +261,22 @@ class _AppShellState extends State<AppShell> {
           BottomNavigationBar(
             currentIndex: _index,
             onTap: (i) => setState(() => _index = i),
-            items: const [
-              BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
+            items: [
               BottomNavigationBarItem(
-                  icon: Icon(Icons.explore), label: 'Discover'),
-              BottomNavigationBarItem(icon: Icon(Icons.search), label: 'Search'),
+                  icon: const Icon(Icons.home),
+                  label: context.l10n.navHome),
               BottomNavigationBarItem(
-                  icon: Icon(Icons.library_music), label: 'Library'),
+                  icon: const Icon(Icons.explore),
+                  label: context.l10n.navDiscover),
               BottomNavigationBarItem(
-                  icon: Icon(Icons.person), label: 'Profile'),
+                  icon: const Icon(Icons.search),
+                  label: context.l10n.search),
+              BottomNavigationBarItem(
+                  icon: const Icon(Icons.library_music),
+                  label: context.l10n.navLibrary),
+              BottomNavigationBarItem(
+                  icon: const Icon(Icons.person),
+                  label: context.l10n.profile),
             ],
           ),
         ],

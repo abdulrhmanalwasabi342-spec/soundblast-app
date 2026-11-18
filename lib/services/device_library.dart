@@ -11,6 +11,25 @@ import '../api/models.dart';
 /// Android plugin without a namespace, which AGP 8 refuses to configure,
 /// and its 3.0.0 beta needs Dart <3.0. The channel below does the same
 /// MediaStore query (duration > 0, IS_MUSIC) in ~100 lines of Kotlin.
+/// Display cleanup for MediaStore text: file names on this phone are often
+/// percent-encoded (`%D8%A3...` is Arabic UTF-8) and use `_` as a word
+/// separator, so raw titles show as `%D8%A3%D8%B5...` or `#جلسة_خميس...`.
+/// Decode them back to readable words; `<unknown>` (MediaStore's own
+/// placeholder) and empty text become the fallback.
+String _cleanLabel(String? raw, String fallback) {
+  var s = (raw ?? '').trim();
+  if (s.isEmpty || s == '<unknown>') return fallback;
+  if (s.contains('%')) {
+    try {
+      s = Uri.decodeComponent(s);
+    } catch (_) {
+      // Not valid percent-encoding (e.g. "100%"): keep the original.
+    }
+  }
+  s = s.replaceAll('_', ' ').replaceAll(RegExp(r'\s+'), ' ').trim();
+  return s.isEmpty ? fallback : s;
+}
+
 class DeviceSong {
   final int id;
   final String title;
@@ -42,16 +61,18 @@ class DeviceSong {
   String get playableUri => contentUri ?? path;
 
   /// Parent folder name of the file (Samsung Music's Folder category).
-  String get folderName {
+  /// Folder names are percent-decoded and prettified like titles, since
+  /// they come from the same mangled file names.
+  String folderName({String unknownFolder = 'Unknown folder'}) {
     final parts = path.split('/');
     if (parts.length >= 2) {
       final name = parts[parts.length - 2];
-      if (name.isNotEmpty) return name;
+      if (name.isNotEmpty) return _cleanLabel(name, unknownFolder);
     }
-    return 'Unknown folder';
+    return unknownFolder;
   }
 
-  Song toSong() => Song(
+  Song toSong({String onThisDevice = 'On this device'}) => Song(
         id: -1000000 - id, // negative ids: never collide with server ids
         title: title,
         artist: artist,
@@ -60,7 +81,7 @@ class DeviceSong {
         audioUrl: '',
         audioKey: '',
         imageUrl: null,
-        genre: (genre?.isNotEmpty ?? false) ? genre! : (album ?? 'On this device'),
+        genre: (genre?.isNotEmpty ?? false) ? genre! : (album ?? onThisDevice),
         duration: durationMs ~/ 1000,
         sizeBytes: 0,
         playCount: 0,
@@ -77,7 +98,10 @@ class DeviceLibrary {
 
   /// Query all audio on the device. Returns [] when the permission is not
   /// granted — callers must run the permission flow first.
-  Future<List<DeviceSong>> querySongs() async {
+  Future<List<DeviceSong>> querySongs({
+    String unknownTitle = 'Unknown title',
+    String unknownArtist = 'Unknown artist',
+  }) async {
     final List<dynamic> raw;
     try {
       raw = await _channel.invokeMethod<List<dynamic>>('querySongs') ?? [];
@@ -96,17 +120,13 @@ class DeviceLibrary {
       if (path.isEmpty || durationMs <= 0) continue;
       songs.add(DeviceSong(
         id: (m['id'] as num?)?.toInt() ?? 0,
-        title: (m['title']?.toString().isNotEmpty ?? false)
-            ? m['title'].toString()
-            : 'Unknown title',
-        artist: (m['artist']?.toString().isNotEmpty ?? false)
-            ? m['artist'].toString()
-            : 'Unknown artist',
+        title: _cleanLabel(m['title']?.toString(), unknownTitle),
+        artist: _cleanLabel(m['artist']?.toString(), unknownArtist),
         path: path,
         durationMs: durationMs,
-        album: m['album']?.toString(),
-        genre: m['genre']?.toString(),
-        composer: m['composer']?.toString(),
+        album: _cleanLabel(m['album']?.toString(), ''),
+        genre: _cleanLabel(m['genre']?.toString(), ''),
+        composer: _cleanLabel(m['composer']?.toString(), ''),
         contentUri: m['contentUri']?.toString(),
       ));
     }

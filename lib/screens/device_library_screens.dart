@@ -50,7 +50,8 @@ Map<String, List<DeviceSong>> groupDeviceSongs(
       DeviceCategory.artists => d.artist,
       DeviceCategory.genres =>
         (d.genre?.isNotEmpty ?? false) ? d.genre! : l10n.unknownGenre,
-      DeviceCategory.folders => d.folderName,
+      DeviceCategory.folders =>
+        d.folderName(unknownFolder: l10n.unknownFolder),
       DeviceCategory.composers =>
         (d.composer?.isNotEmpty ?? false) ? d.composer! : l10n.unknownComposer,
     };
@@ -60,8 +61,13 @@ Map<String, List<DeviceSong>> groupDeviceSongs(
   return {for (final k in keys) k: map[k]!};
 }
 
-List<Song> deviceSongsToQueue(List<DeviceSong> songs) =>
-    songs.map((d) => d.toSong().copyWithLocalPath(d.playableUri)).toList();
+List<Song> deviceSongsToQueue(List<DeviceSong> songs,
+        {String onThisDevice = 'On this device'}) =>
+    songs
+        .map((d) => d
+            .toSong(onThisDevice: onThisDevice)
+            .copyWithLocalPath(d.playableUri))
+        .toList();
 
 /// Small text-input dialog, shared by "new playlist" and "rename".
 Future<String?> askTextInput(
@@ -154,16 +160,17 @@ class DeviceSongsScreen extends StatelessWidget {
   const DeviceSongsScreen(
       {super.key, required this.title, required this.songs});
 
-  List<Song> get _queue => deviceSongsToQueue(songs);
+  List<Song> _queue(String onThisDevice) =>
+      deviceSongsToQueue(songs, onThisDevice: onThisDevice);
 
   Future<void> _playAll(BuildContext context, {bool shuffled = false}) async {
     if (songs.isEmpty) return;
     final state = context.read<AppState>();
-    final queue = _queue;
+    final queue = _queue(context.l10n.onThisDevice);
     if (shuffled) queue.shuffle();
     final first = queue.first;
     final firstDevice = songs.firstWhere(
-        (d) => d.toSong().id == first.id,
+        (d) => d.toSong(onThisDevice: context.l10n.onThisDevice).id == first.id,
         orElse: () => songs.first);
     await state.playLocalSong(first,
         localPath: firstDevice.playableUri, fromQueue: queue);
@@ -217,7 +224,7 @@ class DeviceSongsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final state = context.read<AppState>();
-    final queue = _queue;
+    final queue = _queue(context.l10n.onThisDevice);
     return Scaffold(
       appBar: AppBar(title: Text(title)),
       body: songs.isEmpty
@@ -290,7 +297,8 @@ class LocalPlaylistDetailScreen extends StatelessWidget {
     final songs = state.deviceSongs
         .where((d) => playlist.songIds.contains(d.id))
         .toList();
-    final queue = deviceSongsToQueue(songs);
+    final queue = deviceSongsToQueue(songs,
+        onThisDevice: context.l10n.onThisDevice);
     return Scaffold(
       appBar: AppBar(
         title: Text(playlist.name),

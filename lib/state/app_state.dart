@@ -1,11 +1,13 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:ui' show Locale;
+import 'dart:io';
 
 import 'package:audio_session/audio_session.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:just_audio_background/just_audio_background.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../api/api.dart';
@@ -42,6 +44,51 @@ class AppState extends ChangeNotifier {
   /// Called by screens that obtain a fresh user (e.g. OAuth) so listeners
   /// update. (Direct `state.user = ...; state.notifyListeners()` from a
   /// screen is an invalid use of the protected member.)
+  /// Path of a profile photo picked on this phone, saved locally because
+  /// the server upload needs storage that is not configured yet (the
+  /// upload fails with "Storage config missing"). The local photo is what
+  /// the Profile screen shows until the server copy lands.
+  String? localProfilePhotoPath;
+
+  /// The avatar to show for [user]: a photo picked on this phone wins over
+  /// the server URL, then the server photo, then nothing.
+  ImageProvider? profilePhotoImage(User? user) {
+    final local = localProfilePhotoPath;
+    if (local != null && File(local).existsSync()) {
+      return FileImage(File(local));
+    }
+    final url = user?.imageUrl;
+    if (url != null && url.isNotEmpty) return NetworkImage(url);
+    return null;
+  }
+
+  Future<void> saveLocalProfilePhoto(Uint8List bytes) async {
+    try {
+      final dir = await getApplicationDocumentsDirectory();
+      final file = File('${dir.path}/profile-photo.jpg');
+      await file.writeAsBytes(bytes);
+      localProfilePhotoPath = file.path;
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('sb_local_profile_photo', file.path);
+      notifyListeners();
+    } catch (_) {
+      // Local save is best-effort; the in-memory pick still shows.
+    }
+  }
+
+  Future<void> clearLocalProfilePhoto() async {
+    final path = localProfilePhotoPath;
+    localProfilePhotoPath = null;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('sb_local_profile_photo');
+    if (path != null) {
+      try {
+        await File(path).delete();
+      } catch (_) {}
+    }
+    notifyListeners();
+  }
+
   void setUser(User? u) {
     user = u;
     notifyListeners();
@@ -79,6 +126,15 @@ class AppState extends ChangeNotifier {
   final AudioPlayer player = AudioPlayer();
   List<Song> queue = [];
   int queueIndex = -1;
+
+  /// Last playback failure code ('noAudio' | 'failed'), or null. The shell
+  /// shows it once as a localized snackbar and clears it — a tap that does
+  /// nothing must never be silent again.
+  String? playbackError;
+
+  void clearPlaybackError() {
+    playbackError = null;
+  }
   Song? get currentSong =>
       queueIndex >= 0 && queueIndex < queue.length ? queue[queueIndex] : null;
   bool get isPlaying => player.playing;
@@ -124,6 +180,10 @@ class AppState extends ChangeNotifier {
         : localeRaw == 'en'
             ? const Locale('en')
             : null;
+    final localPhoto = prefs.getString('sb_local_profile_photo');
+    if (localPhoto != null && File(localPhoto).existsSync()) {
+      localProfilePhotoPath = localPhoto;
+    }
     final homeRaw = prefs.getString('sb_cached_home');
     if (homeRaw != null) {
       try {
@@ -168,9 +228,18 @@ class AppState extends ChangeNotifier {
   }
 
   /// Load the on-device library (after the permission flow granted access).
-  Future<void> refreshDeviceSongs() async {
+  /// Callers with a BuildContext pass the localized "unknown" fallbacks so
+  /// the on-device list reads right in Arabic too; without them the plain
+  /// English fallbacks apply.
+  Future<void> refreshDeviceSongs({
+    String? unknownTitle,
+    String? unknownArtist,
+  }) async {
     try {
-      deviceSongs = await deviceLibrary.querySongs();
+      deviceSongs = await deviceLibrary.querySongs(
+        unknownTitle: unknownTitle ?? 'Unknown title',
+        unknownArtist: unknownArtist ?? 'Unknown artist',
+      );
       deviceSongsLoaded = true;
     } catch (_) {
       deviceSongs = [];
@@ -360,8 +429,8 @@ class AppState extends ChangeNotifier {
     queue = q;
     queueIndex = idx;
     notifyListeners();
-    await _loadQueueAndPlay(idx);
-    if (song.id > 0) unawaited(_recordPlay(song));
+    final ok = await _loadQueueAndPlay(idx);
+    if (ok && song.id > 0) unawaited(_recordPlay(song));
   }
 
   /// Play a downloaded or on-device song (local file) through the same
@@ -400,12 +469,17 @@ class AppState extends ChangeNotifier {
     }
   }
 
-  Future<void> _loadQueueAndPlay(int startIndex) async {
+  /// Returns false when nothing could be played, setting [playbackError]
+  /// so the shell can tell the user instead of leaving a fake "playing"
+  /// state on screen.
+  Future<bool> _loadQueueAndPlay(int startIndex) async {
     final playable = queue
         .where((s) => s.audioUrl.isNotEmpty || (s.localPath ?? '').isNotEmpty)
         .toList();
     if (playable.isEmpty) {
-      throw const ApiException('This song has no audio file.');
+      playbackError = 'noAudio';
+      notifyListeners();
+      return false;
     }
     final sources = playable.map((s) {
       final local = s.localPath ?? '';
@@ -435,13 +509,21 @@ class AppState extends ChangeNotifier {
         (s) => s.audioUrl.isNotEmpty || (s.localPath ?? '').isNotEmpty);
     _playableOffset = offset < 0 ? 0 : offset;
     final start = startIndex - offset;
-    await player.setAudioSource(
-      ConcatenatingAudioSource(children: sources),
-      initialIndex: start < 0 ? 0 : start,
-      initialPosition: Duration.zero,
-    );
-    await player.play();
+    try {
+      await player.setAudioSource(
+        ConcatenatingAudioSource(children: sources),
+        initialIndex: start < 0 ? 0 : start,
+        initialPosition: Duration.zero,
+      );
+      await player.play();
+    } catch (e) {
+      debugPrint('SoundBlast playback failed: $e');
+      playbackError = 'failed';
+      notifyListeners();
+      return false;
+    }
     notifyListeners();
+    return true;
   }
 
   Future<void> _recordPlay(Song song) async {

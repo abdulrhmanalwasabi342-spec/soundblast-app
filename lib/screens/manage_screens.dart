@@ -64,10 +64,8 @@ class ProfileScreen extends StatelessWidget {
                       CircleAvatar(
                         radius: 36,
                         backgroundColor: SbColors.surface2,
-                        backgroundImage: user.imageUrl != null
-                            ? NetworkImage(user.imageUrl!)
-                            : null,
-                        child: user.imageUrl == null
+                        backgroundImage: state.profilePhotoImage(user),
+                        child: state.profilePhotoImage(user) == null
                             ? const Icon(Icons.person,
                                 size: 36, color: SbColors.muted)
                             : null,
@@ -362,7 +360,14 @@ class _UploadSongScreenState extends State<UploadSongScreen> {
       withData: true,
     );
     if (result == null || result.files.isEmpty) return;
-    setState(() => _image = result.files.first);
+    final file = result.files.first;
+    setState(() => _image = file);
+    // Save it on this phone right away: the server upload needs storage
+    // that is not configured yet, and a failed upload must never lose
+    // the photo.
+    if (file.bytes != null) {
+      await context.read<AppState>().saveLocalProfilePhoto(file.bytes!);
+    }
   }
 
   Future<void> _publish() async {
@@ -1609,7 +1614,14 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       withData: true,
     );
     if (result == null || result.files.isEmpty) return;
-    setState(() => _image = result.files.first);
+    final file = result.files.first;
+    setState(() => _image = file);
+    // Save it on this phone right away: the server upload needs storage
+    // that is not configured yet, and a failed upload must never lose
+    // the photo.
+    if (file.bytes != null) {
+      await context.read<AppState>().saveLocalProfilePhoto(file.bytes!);
+    }
   }
 
   Future<void> _save() async {
@@ -1624,13 +1636,22 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     setState(() => _saving = true);
     try {
       String? imageUrl;
+      var photoKeptLocal = false;
       if (_image?.bytes != null) {
-        final upload = await state.api.uploadFile(
-          base64Data: base64Encode(_image!.bytes!),
-          fileName: _image!.name,
-          fileType: 'image/${_image!.extension ?? 'jpeg'}',
-        );
-        imageUrl = upload['url']?.toString();
+        try {
+          final upload = await state.api.uploadFile(
+            base64Data: base64Encode(_image!.bytes!),
+            fileName: _image!.name,
+            fileType: 'image/${_image!.extension ?? 'jpeg'}',
+          );
+          imageUrl = upload['url']?.toString();
+          if (imageUrl != null) await state.clearLocalProfilePhoto();
+        } catch (_) {
+          // Storage is not configured on the server, so the upload fails —
+          // the photo is already saved on this phone (see _pickImage), so
+          // the name and bio still save and the photo still shows.
+          photoKeptLocal = true;
+        }
       }
       final result = await state.api.updateArtistProfile(
         stageName: stageName,
@@ -1647,7 +1668,11 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       final me = await state.api.me();
       if (me != null) state.setUser(me);
       if (!mounted) return;
-      showSnack(context, context.l10n.profileUpdated);
+      showSnack(
+          context,
+          photoKeptLocal
+              ? context.l10n.photoSavedLocally
+              : context.l10n.profileUpdated);
       Navigator.of(context).pop();
     } catch (e) {
       if (mounted) showSnack(context, e.toString());
@@ -1693,9 +1718,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                         child: CircleAvatar(
                           radius: 48,
                           backgroundColor: SbColors.surface2,
-                          backgroundImage: _image?.bytes == null &&
-                                  user.imageUrl != null
-                              ? NetworkImage(user.imageUrl!)
+                          backgroundImage: _image?.bytes == null
+                              ? state.profilePhotoImage(user)
                               : null,
                           child: _image?.bytes != null
                               ? ClipOval(
@@ -1706,7 +1730,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                                     fit: BoxFit.cover,
                                   ),
                                 )
-                              : user.imageUrl == null
+                              : state.profilePhotoImage(user) == null
                                   ? const Icon(Icons.person,
                                       size: 48, color: SbColors.muted)
                                   : null,

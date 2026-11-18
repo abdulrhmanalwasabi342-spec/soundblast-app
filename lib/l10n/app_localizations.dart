@@ -339,7 +339,7 @@ abstract class AppLocalizations {
   ///
   /// In en, this message translates to:
   /// **'{followers} followers • {songs} songs • {plays} plays'**
-  String artistStats(String followers, String songs, String plays);
+  String artistStats(String followers, String plays, String songs);
 
   /// No description provided for @artistStudio.
   ///
@@ -640,6 +640,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Cancel'**
   String get cancel;
+
+  /// No description provided for @cannotPlaySong.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t play this song. Check your connection and try again.'**
+  String get cannotPlaySong;
 
   /// No description provided for @catAlbums.
   ///
@@ -2225,6 +2231,12 @@ abstract class AppLocalizations {
   /// **'OAuth users'**
   String get oauthUsers;
 
+  /// No description provided for @offlineShowingCache.
+  ///
+  /// In en, this message translates to:
+  /// **'You\'re offline — showing the last saved library.'**
+  String get offlineShowingCache;
+
   /// No description provided for @offlineShowingSaved.
   ///
   /// In en, this message translates to:
@@ -2242,6 +2254,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'On this device'**
   String get onDeviceTitle;
+
+  /// No description provided for @onThisDevice.
+  ///
+  /// In en, this message translates to:
+  /// **'On this device'**
+  String get onThisDevice;
 
   /// No description provided for @onboardingArtist.
   ///
@@ -2428,6 +2446,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'The app asks for storage access only when you pick an audio file, artwork or profile photo to upload. Playback continues while the app is in the background so your music is not interrupted.'**
   String get permissionsBody;
+
+  /// No description provided for @photoSavedLocally.
+  ///
+  /// In en, this message translates to:
+  /// **'Photo saved on this phone. It will sync to your profile when storage is ready.'**
+  String get photoSavedLocally;
 
   /// No description provided for @pickSongHint.
   ///
@@ -2873,6 +2897,12 @@ abstract class AppLocalizations {
   /// **'Skip'**
   String get skip;
 
+  /// No description provided for @songNoAudio.
+  ///
+  /// In en, this message translates to:
+  /// **'This song has no audio file.'**
+  String get songNoAudio;
+
   /// No description provided for @songPublished.
   ///
   /// In en, this message translates to:
@@ -3089,6 +3119,12 @@ abstract class AppLocalizations {
   /// **'Unknown album'**
   String get unknownAlbum;
 
+  /// No description provided for @unknownArtist.
+  ///
+  /// In en, this message translates to:
+  /// **'Unknown artist'**
+  String get unknownArtist;
+
   /// No description provided for @unknownComposer.
   ///
   /// In en, this message translates to:
@@ -3106,6 +3142,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Unknown genre'**
   String get unknownGenre;
+
+  /// No description provided for @unknownTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Unknown title'**
+  String get unknownTitle;
 
   /// No description provided for @unlikeAction.
   ///

@@ -29,6 +29,7 @@ class _HomeScreenState extends State<HomeScreen> {
   String? _error;
   bool _usedFallback = false;
   bool _showingCache = false;
+  bool _cacheRetryScheduled = false;
 
   @override
   void initState() {
@@ -92,6 +93,7 @@ class _HomeScreenState extends State<HomeScreen> {
       if (_summary != null) {
         // The cache is already on screen; the refresh just failed quietly.
         setState(() => _showingCache = true);
+        _scheduleCacheRetry();
       } else {
         final state2 = context.read<AppState>();
         if (state2.cachedHome != null) {
@@ -101,6 +103,7 @@ class _HomeScreenState extends State<HomeScreen> {
             _loading = false;
             _showingCache = true;
           });
+          _scheduleCacheRetry();
         } else {
           setState(() {
             _error = e.toString();
@@ -109,6 +112,19 @@ class _HomeScreenState extends State<HomeScreen> {
         }
       }
     }
+  }
+
+  /// One silent retry ~25s after a failed refresh while the cache banner
+  /// is showing: the free server sleeps after 15 idle minutes and takes a
+  /// while to wake, so the first load often fails and the banner would
+  /// otherwise stick until the user pulls to refresh.
+  void _scheduleCacheRetry() {
+    if (_cacheRetryScheduled) return;
+    _cacheRetryScheduled = true;
+    Future.delayed(const Duration(seconds: 25), () {
+      _cacheRetryScheduled = false;
+      if (mounted && _showingCache) _load();
+    });
   }
 
   @override
@@ -161,9 +177,9 @@ class _HomeScreenState extends State<HomeScreen> {
                             color: SbColors.surface2,
                             borderRadius: BorderRadius.circular(12),
                           ),
-                          child: const Text(
-                            'You are offline — showing the last saved library.',
-                            style: TextStyle(color: SbColors.muted),
+                          child: Text(
+                            context.l10n.offlineShowingCache,
+                            style: const TextStyle(color: SbColors.muted),
                           ),
                         ),
                       if (_usedFallback)
@@ -174,9 +190,10 @@ class _HomeScreenState extends State<HomeScreen> {
                             color: SbColors.surface2,
                             borderRadius: BorderRadius.circular(12),
                           ),
-                          child: const Text(
-                            'Home summary is unavailable on the server right now — showing songs directly.',
-                            style: TextStyle(color: SbColors.muted, fontSize: 13),
+                          child: Text(
+                            context.l10n.homeSummaryUnavailable,
+                            style: const TextStyle(
+                                color: SbColors.muted, fontSize: 13),
                           ),
                         ),
                       _hero(context, state),
@@ -348,7 +365,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                   const SizedBox(width: 8),
                   Text(
-                    '${_songs.length} signals live',
+                    context.l10n.signalsLive(_songs.length),
                     style: const TextStyle(
                         color: Colors.white54, fontSize: 12),
                   ),
