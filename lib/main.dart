@@ -1,7 +1,5 @@
+import 'package:audio_service/audio_service.dart';
 import 'package:flutter/material.dart';
-import 'package:just_audio_background/just_audio_background.dart';
-import 'package:just_audio_platform_interface/just_audio_platform_interface.dart';
-import 'package:just_audio_platform_interface/method_channel_just_audio.dart';
 import 'package:provider/provider.dart';
 
 import 'l10n/app_localizations.dart';
@@ -14,6 +12,7 @@ import 'screens/manage_screens.dart';
 import 'screens/admin_screen.dart';
 import 'screens/oauth_screen.dart';
 import 'screens/player_screen.dart';
+import 'services/media_handler.dart';
 import 'services/permission_flow.dart';
 import 'state/app_state.dart';
 import 'widgets/app_drawer.dart';
@@ -22,47 +21,45 @@ import 'widgets/common.dart';
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
   // First frame at once (a spinner) so a slow start can never leave a
-  // black screen — then the background audio service is started BEFORE
-  // any AudioPlayer exists. just_audio_background swaps the platform
-  // instance inside init(); a player created earlier keeps the plain
-  // instance forever, so background playback and the media notification
-  // could never work. Only after init runs is AppState (and its player)
-  // created; the network login check still runs in the background.
+  // black screen. The media session is started with our own handler
+  // (SoundBlastAudioHandler) around the app's single AudioPlayer:
+  // unlike just_audio_background's handler it always shows the four
+  // Samsung-style controls (previous, play/pause, next) in that
+  // order, even for a one-song queue, and the close X comes from the
+  // system's cancel button. No platform swap is involved any more —
+  // the player is a plain just_audio player from the start, so a
+  // failed service start can never break playback.
   runApp(MaterialApp(
     debugShowCheckedModeBanner: false,
     theme: ThemeData.dark(),
     home: const Scaffold(body: Center(child: CircularProgressIndicator())),
   ));
   Future(() async {
-    // The background service MUST start before any AudioPlayer exists —
-    // but a failed start must not kill playback outright. init() swaps
-    // the platform instance BEFORE it starts the service, so a failure
-    // (timeout or throw — seen on a real phone as LateInitializationError
-    // for _audioHandler on the first play) leaves the background plugin
-    // in place with its late handler unset, and every later play dies.
-    // Restoring the plain platform keeps playback working in the
-    // foreground (no media notification, no play-after-close) instead
-    // of breaking the player entirely.
+    // AppState first: it creates the single AudioPlayer the handler
+    // wraps. The background fields are filled in below once the
+    // service start has succeeded or failed.
+    final appState = AppState();
     var backgroundReady = false;
     String? backgroundError;
     for (var attempt = 0; attempt < 2 && !backgroundReady; attempt++) {
       if (attempt > 0) {
-        // The first attempt swaps the platform instance before failing;
-        // restore the plain platform so the retry starts clean.
-        JustAudioPlatform.instance = MethodChannelJustAudio();
         await Future.delayed(const Duration(seconds: 2));
       }
       try {
-        await JustAudioBackground.init(
-          androidNotificationChannelId: 'com.soundblast.app.audio',
-          androidNotificationChannelName: 'SoundBlast playback',
-          androidNotificationOngoing: true,
-          androidNotificationIcon: 'mipmap/ic_launcher',
-          // Calm blue accent for the system media card (Samsung One UI
-          // tints the card's title, controls and seek bar with the
-          // notification color). Without it One UI renders the card
-          // white/grey instead of Samsung's blue.
-          notificationColor: const Color(0xFF3B82F6),
+        await AudioService.init(
+          builder: () => SoundBlastAudioHandler(appState.player),
+          config: const AudioServiceConfig(
+            androidNotificationChannelId: 'com.soundblast.app.audio',
+            androidNotificationChannelName: 'SoundBlast playback',
+            androidNotificationOngoing: true,
+            androidNotificationIcon: 'mipmap/ic_launcher',
+            // Calm blue accent for the system media card. The stock
+            // plugin only called setColor (small-icon tint); our
+            // vendored audio_service also calls setColorized, so
+            // Samsung One UI actually applies the accent to the
+            // card's title, controls and seek bar.
+            notificationColor: Color(0xFF3B82F6),
+          ),
         ).timeout(const Duration(seconds: 30));
         backgroundReady = true;
       } catch (e) {
@@ -70,17 +67,12 @@ void main() {
         debugPrint('SoundBlast background audio unavailable: $e');
       }
     }
-    if (!backgroundReady) {
-      JustAudioPlatform.instance = MethodChannelJustAudio();
-    }
-    final appState = AppState(
-      backgroundAudioReady: backgroundReady,
-      backgroundAudioError: backgroundReady || backgroundError == null
-          ? null
-          : (backgroundError.length > 120
-              ? '${backgroundError.substring(0, 120)}…'
-              : backgroundError),
-    );
+    appState.backgroundAudioReady = backgroundReady;
+    appState.backgroundAudioError = backgroundReady || backgroundError == null
+        ? null
+        : (backgroundError.length > 120
+            ? '${backgroundError.substring(0, 120)}…'
+            : backgroundError);
     runApp(
       ChangeNotifierProvider.value(
         value: appState,

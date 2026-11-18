@@ -261,8 +261,7 @@ class _LoginScreenState extends State<LoginScreen> {
     // sleeping server pays the whole 30-90s cold start. Covers the
     // case where the app has been open (guest) long enough for the
     // server to fall asleep again after AppState.init()'s warm-up.
-    unawaited(
-        context.read<AppState>().api.client.getStatus('/login'));
+    unawaited(context.read<AppState>().warmUpServer());
   }
 
   final _email = TextEditingController();

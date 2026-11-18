@@ -6,8 +6,8 @@ import 'package:audio_session/audio_session.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
+import 'package:audio_service/audio_service.dart';
 import 'package:just_audio/just_audio.dart';
-import 'package:just_audio_background/just_audio_background.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -175,12 +175,14 @@ class AppState extends ChangeNotifier {
   /// Whether the background audio service started: when it did not,
   /// playback still works in the foreground but stops when the app
   /// closes. Shown on the About screen so the cause is visible.
-  final bool backgroundAudioReady;
+  /// Mutable (not final): main.dart fills it in after the service
+  /// start, which now runs after AppState (and its player) exist.
+  bool backgroundAudioReady;
 
   /// The init failure reason, when the background service did not start:
   /// shown on the About screen so the cause is visible instead of a
-  /// silent "unavailable".
-  final String? backgroundAudioError;
+  /// silent "unavailable". Mutable like [backgroundAudioReady].
+  String? backgroundAudioError;
 
   /// Whether the system is ignoring battery optimizations for this app
   /// (null = not checked yet). Samsung's battery optimization kills the
@@ -286,13 +288,22 @@ class AppState extends ChangeNotifier {
     localPlaylists.addListener(notifyListeners);
     unawaited(localPlaylists.load());
     unawaited(_refreshAuth());
-    // Wake the free backend while the app loads: a sleeping Render
-    // service takes 30-90s to answer its first request, which is why
-    // login felt stuck (the tap itself paid the whole cold start).
-    // A light GET runs in the background so the service is already up
-    // when the user taps login. Never blocks: getStatus times out
-    // on its own and returns null on failure.
-    unawaited(api.client.getStatus('/login'));
+    // Wake the free backend while the app loads (see warmUpServer):
+    // a sleeping Render service takes 30-90s to answer its first
+    // request, which is why login felt stuck.
+    unawaited(warmUpServer());
+  }
+
+  /// Wake the free backend in the background, retrying until it
+  /// answers: a cold Render start can outlast one 60s probe, and a
+  /// login tap on a still-sleeping server pays the whole wait.
+  /// Called at app start and when the login screen opens.
+  Future<void> warmUpServer() async {
+    for (var i = 0; i < 3; i++) {
+      final status = await api.client.getStatus('/login');
+      if (status != null) return;
+      await Future<void>.delayed(const Duration(seconds: 10));
+    }
   }
 
   /// Background server auth check: updates the signed-in user when the
@@ -411,6 +422,22 @@ class AppState extends ChangeNotifier {
 
   // ---- auth ---------------------------------------------------------------
   Future<String?> login(String email, String password) async {
+    // One retry: the first attempt can still catch the server
+    // half-awake (a fast failure while the warm-up is in flight);
+    // by the second attempt it is usually up.
+    for (var attempt = 0; attempt < 2; attempt++) {
+      try {
+        return await _loginOnce(email, password);
+      } catch (_) {
+        if (attempt == 0) {
+          await Future<void>.delayed(const Duration(seconds: 5));
+        }
+      }
+    }
+    return 'invalid';
+  }
+
+  Future<String?> _loginOnce(String email, String password) async {
     final res = await api.login(email, password);
     if (res['success'] == true) {
       user = User.fromJson(res['user']);
@@ -573,12 +600,13 @@ class AppState extends ChangeNotifier {
   }
 
   // ---- player ---------------------------------------------------------------
-  // Background playback: the player runs in just_audio_background's
-  // foreground service (see main(): JustAudioBackground.init), so audio
-  // keeps playing when the app is closed, with a media notification
-  // (title/artist/cover, play/pause/next/previous) and lock-screen
-  // controls. Audio focus / interruptions (calls, other apps) are handled
-  // by the audio session: playback pauses on a call and resumes after.
+  // Background playback: the player runs in audio_service's foreground
+  // service (see main(): AudioService.init with SoundBlastAudioHandler),
+  // so audio keeps playing when the app is closed, with a media
+  // notification (title/artist/cover, play/pause/next/previous) and
+  // lock-screen controls. Audio focus / interruptions (calls, other
+  // apps) are handled by the audio session: playback pauses on a call
+  // and resumes after.
   Future<void> playSong(Song song, {List<Song>? fromQueue}) async {
     if (!_playerReady) return;
     await _ensureNotificationPermissionOnce();
