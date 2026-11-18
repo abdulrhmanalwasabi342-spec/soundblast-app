@@ -108,6 +108,22 @@ class Song {
     this.localPath,
   });
 
+  /// Direct B2 links to a private bucket answer 401 — the server hands out
+  /// the /manus-storage/ proxy instead. Rows stored before that fix still
+  /// carry the direct B2 URL, so rewrite them here at parse time: every
+  /// consumer (player, covers, downloads) then gets a working link.
+  static const _b2DirectPrefix =
+      'https://soundblast.s3.us-east-005.backblazeb2.com/';
+  static const _proxyBase =
+      'https://soundblast.onrender.com/manus-storage';
+
+  static String _resolveMediaUrl(String url) {
+    if (url.startsWith(_b2DirectPrefix)) {
+      return '$_proxyBase/${url.substring(_b2DirectPrefix.length)}';
+    }
+    return url;
+  }
+
   factory Song.fromJson(dynamic json) {
     final m = _asMap(json);
     return Song(
@@ -116,9 +132,11 @@ class Song {
       artist: _asStr(m['artist'], 'Unknown artist'),
       userId: _asStr(m['userId']),
       localUserId: _asInt(m['localUserId']),
-      audioUrl: _asStr(m['audioUrl']),
+      audioUrl: _resolveMediaUrl(_asStr(m['audioUrl'])),
       audioKey: _asStr(m['audioKey']),
-      imageUrl: m['imageUrl']?.toString(),
+      imageUrl: m['imageUrl'] == null
+          ? null
+          : _resolveMediaUrl(m['imageUrl'].toString()),
       genre: _asStr(m['genre'], 'Pop'),
       duration: _asInt(m['duration']),
       sizeBytes: _asInt(m['sizeBytes']),
