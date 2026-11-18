@@ -8,11 +8,19 @@ import android.net.Uri
 import android.os.PowerManager
 import android.provider.MediaStore
 import android.provider.Settings
-import io.flutter.embedding.android.FlutterActivity
+import com.ryanheise.audioservice.AudioServiceActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
 
-class MainActivity : FlutterActivity() {
+// NOTE: this MUST extend AudioServiceActivity (not plain FlutterActivity).
+// audio_service runs its media session on a shared cached FlutterEngine;
+// a plain FlutterActivity creates its own private engine, so the
+// plugin's engine check fails ("The Activity class declared in your
+// AndroidManifest.xml is wrong...") and JustAudioBackground.init
+// throws on every launch — no media notification, no background
+// playback. AudioServiceActivity provides the shared engine, so the
+// Activity and the audio service run on the same engine.
+class MainActivity : AudioServiceActivity() {
     companion object {
         private const val CHANNEL = "com.soundblast.app/media_store"
     }
