@@ -286,6 +286,13 @@ class AppState extends ChangeNotifier {
     localPlaylists.addListener(notifyListeners);
     unawaited(localPlaylists.load());
     unawaited(_refreshAuth());
+    // Wake the free backend while the app loads: a sleeping Render
+    // service takes 30-90s to answer its first request, which is why
+    // login felt stuck (the tap itself paid the whole cold start).
+    // A light GET runs in the background so the service is already up
+    // when the user taps login. Never blocks: getStatus times out
+    // on its own and returns null on failure.
+    unawaited(api.client.getStatus('/login'));
   }
 
   /// Background server auth check: updates the signed-in user when the

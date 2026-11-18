@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
 
@@ -252,6 +253,18 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
+  @override
+  void initState() {
+    super.initState();
+    // Wake the server while the user types their credentials: the
+    // backend sleeps after 15 idle minutes, and a login tap on a
+    // sleeping server pays the whole 30-90s cold start. Covers the
+    // case where the app has been open (guest) long enough for the
+    // server to fall asleep again after AppState.init()'s warm-up.
+    unawaited(
+        context.read<AppState>().api.client.getStatus('/login'));
+  }
+
   final _email = TextEditingController();
   final _password = TextEditingController();
   bool _busy = false;
