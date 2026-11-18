@@ -58,6 +58,11 @@ void main() {
           androidNotificationChannelName: 'SoundBlast playback',
           androidNotificationOngoing: true,
           androidNotificationIcon: 'mipmap/ic_launcher',
+          // Calm blue accent for the system media card (Samsung One UI
+          // tints the card's title, controls and seek bar with the
+          // notification color). Without it One UI renders the card
+          // white/grey instead of Samsung's blue.
+          notificationColor: const Color(0xFF3B82F6),
         ).timeout(const Duration(seconds: 30));
         backgroundReady = true;
       } catch (e) {
