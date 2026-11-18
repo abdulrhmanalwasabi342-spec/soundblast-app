@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
@@ -356,6 +357,10 @@ class _SignupScreenState extends State<SignupScreen> {
   String? _error;
   String? _avatarUrl;
   String? _avatarName;
+  // The picked photo itself: shown in the circle the moment it is picked,
+  // even while the upload is still running (or the server is unreachable).
+  Uint8List? _avatarBytes;
+  PlatformFile? _avatarFile;
   bool _uploadingAvatar = false;
 
   Future<void> _pickAvatar() async {
@@ -371,22 +376,40 @@ class _SignupScreenState extends State<SignupScreen> {
       showSnack(context, 'The photo exceeds 5MB.');
       return;
     }
-    setState(() => _uploadingAvatar = true);
+    // Show the photo immediately — the upload runs in the background and
+    // must never be the reason the circle stays empty.
+    setState(() {
+      _avatarBytes = bytes;
+      _avatarFile = file;
+      _avatarName = file.name;
+      _uploadingAvatar = true;
+    });
+    await _uploadAvatar();
+    if (mounted) setState(() => _uploadingAvatar = false);
+  }
+
+  /// Upload the picked photo; returns its URL (or null). Retried at signup
+  /// time when the first attempt failed, so a photo picked while the server
+  /// was unreachable still lands on the account.
+  Future<String?> _uploadAvatar() async {
+    final bytes = _avatarBytes;
+    final file = _avatarFile;
+    if (bytes == null || file == null) return null;
     try {
       final url = await context.read<AppState>().api.signupAvatarUpload(
             base64Data: base64Encode(bytes),
             fileName: file.name,
             fileType: 'image/${file.extension ?? 'jpeg'}',
           );
-      if (!mounted) return;
-      setState(() {
-        _avatarUrl = url;
-        _avatarName = file.name;
-      });
+      if (!mounted) return url;
+      setState(() => _avatarUrl = url);
+      return url;
     } catch (e) {
-      if (mounted) showSnack(context, e.toString());
-    } finally {
-      if (mounted) setState(() => _uploadingAvatar = false);
+      if (mounted) {
+        showSnack(context,
+            'Photo upload failed — it will be retried when you create the account.');
+      }
+      return null;
     }
   }
 
@@ -412,6 +435,12 @@ class _SignupScreenState extends State<SignupScreen> {
       _busy = true;
       _error = null;
     });
+    // The photo was picked but its upload never completed (e.g. the server
+    // was unreachable at pick time): try once more now so the account gets
+    // the photo.
+    if (_avatarBytes != null && _avatarUrl == null) {
+      await _uploadAvatar();
+    }
     try {
       final err = await state.signup(
         name: _name.text.trim(),
@@ -489,10 +518,14 @@ class _SignupScreenState extends State<SignupScreen> {
                     child: CircleAvatar(
                       radius: 44,
                       backgroundColor: SbColors.surface2,
-                      backgroundImage: _avatarUrl != null
-                          ? NetworkImage(_avatarUrl!)
-                          : null,
-                      child: _avatarUrl == null
+                      // Local photo first: it is there the moment the user
+                      // picks it, even if the upload has not finished.
+                      backgroundImage: _avatarBytes != null
+                          ? MemoryImage(_avatarBytes!)
+                          : (_avatarUrl != null
+                              ? NetworkImage(_avatarUrl!)
+                              : null),
+                      child: _avatarBytes == null && _avatarUrl == null
                           ? (_uploadingAvatar
                               ? const CircularProgressIndicator()
                               : const Icon(Icons.add_a_photo,

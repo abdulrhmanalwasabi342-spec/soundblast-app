@@ -8,6 +8,7 @@ import '../services/permission_flow.dart';
 import '../state/app_state.dart';
 import '../widgets/app_drawer.dart';
 import '../widgets/common.dart';
+import 'device_library_screens.dart';
 import 'home_screens.dart' show SongActions;
 
 /// Search — songs.search returns songs + artists + genres (website Search).
@@ -429,6 +430,71 @@ class _LibraryScreenState extends State<LibraryScreen>
     );
   }
 
+  /// Offline playlists (on-device songs only, no account): list + create.
+  Widget _localPlaylistsHub(BuildContext context, AppState state) {
+    final store = state.localPlaylists;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
+          child: Row(
+            children: [
+              const Expanded(
+                child: Text('My playlists (offline)',
+                    style:
+                        TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+              ),
+              TextButton.icon(
+                onPressed: () async {
+                  final name = await askTextInput(context,
+                      title: 'New playlist', hint: 'Playlist name');
+                  if (name != null && name.isNotEmpty) {
+                    await store.create(name);
+                  }
+                },
+                icon: const Icon(Icons.add, size: 18),
+                label: const Text('New'),
+              ),
+            ],
+          ),
+        ),
+        if (store.items.isEmpty)
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+            child: Text(
+              'No offline playlists yet. Create one, then add songs with ⋮ on any on-device song.',
+              style: TextStyle(color: SbColors.muted),
+            ),
+          )
+        else
+          ...store.items.map((p) => ListTile(
+                leading: Container(
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    color: SbColors.surface2,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Icon(Icons.playlist_play,
+                      color: SbColors.accent),
+                ),
+                title: Text(p.name),
+                subtitle: Text(
+                    '${p.songIds.length} song${p.songIds.length == 1 ? '' : 's'}'),
+                trailing: const Icon(Icons.chevron_right,
+                    color: SbColors.muted),
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) =>
+                        LocalPlaylistDetailScreen(playlist: p),
+                  ),
+                ),
+              )),
+      ],
+    );
+  }
+
   Widget _onDeviceSection(BuildContext context, AppState state) {
     return FutureBuilder<bool>(
       future: PermissionFlow.isMediaGranted(),
@@ -458,23 +524,56 @@ class _LibraryScreenState extends State<LibraryScreen>
               ),
             );
           }
-          final queue = state.deviceSongs
-              .map((d) => d.toSong().copyWithLocalPath(d.playableUri))
-              .toList();
+          // Samsung Music-style hub: the same on-device songs, browsable
+          // by category, plus playlists that live only on this phone —
+          // everything here works with no internet at all.
           return Column(
-            children: state.deviceSongs.asMap().entries.map((e) {
-              final ds = e.value;
-              final song = queue[e.key];
-              return SongTile(
-                song: song,
-                onTap: () => state.playLocalSong(song,
-                    localPath: ds.playableUri, fromQueue: queue),
-                onPlay: () => state.playLocalSong(song,
-                    localPath: ds.playableUri, fromQueue: queue),
-                trailing: const Icon(Icons.smartphone,
-                    color: SbColors.muted, size: 18),
-              );
-            }).toList(),
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _localPlaylistsHub(context, state),
+              ...DeviceCategory.values.map((c) {
+                final count = c == DeviceCategory.tracks
+                    ? state.deviceSongs.length
+                    : groupDeviceSongs(c, state.deviceSongs).length;
+                final unit = c == DeviceCategory.tracks
+                    ? 'songs'
+                    : deviceCategoryLabel(c).toLowerCase();
+                return ListTile(
+                  leading: Container(
+                    width: 48,
+                    height: 48,
+                    decoration: BoxDecoration(
+                      color: SbColors.surface2,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Icon(deviceCategoryIcon(c),
+                        color: SbColors.accent),
+                  ),
+                  title: Text(deviceCategoryLabel(c)),
+                  subtitle: Text('$count $unit'),
+                  trailing: const Icon(Icons.chevron_right,
+                      color: SbColors.muted),
+                  onTap: () {
+                    if (c == DeviceCategory.tracks) {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => DeviceSongsScreen(
+                              title: 'All tracks',
+                              songs: state.deviceSongs),
+                        ),
+                      );
+                    } else {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) =>
+                              DeviceCategoryScreen(category: c),
+                        ),
+                      );
+                    }
+                  },
+                );
+              }),
+            ],
           );
         }
         // Not granted: offer the one-time ask (with explanation first).

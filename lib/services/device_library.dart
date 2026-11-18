@@ -18,6 +18,8 @@ class DeviceSong {
   final String path;
   final int durationMs;
   final String? album;
+  final String? genre;
+  final String? composer;
 
   /// content:// URI for the file — the reliable way to play it under
   /// scoped storage (Android 10+). Falls back to [path] when absent.
@@ -30,12 +32,24 @@ class DeviceSong {
     required this.path,
     required this.durationMs,
     required this.album,
+    this.genre,
+    this.composer,
     this.contentUri,
   });
 
   /// The URI the player should open: content URI when available, else the
   /// raw file path.
   String get playableUri => contentUri ?? path;
+
+  /// Parent folder name of the file (Samsung Music's Folder category).
+  String get folderName {
+    final parts = path.split('/');
+    if (parts.length >= 2) {
+      final name = parts[parts.length - 2];
+      if (name.isNotEmpty) return name;
+    }
+    return 'Unknown folder';
+  }
 
   Song toSong() => Song(
         id: -1000000 - id, // negative ids: never collide with server ids
@@ -46,7 +60,7 @@ class DeviceSong {
         audioUrl: '',
         audioKey: '',
         imageUrl: null,
-        genre: album ?? 'On this device',
+        genre: (genre?.isNotEmpty ?? false) ? genre! : (album ?? 'On this device'),
         duration: durationMs ~/ 1000,
         sizeBytes: 0,
         playCount: 0,
@@ -91,6 +105,8 @@ class DeviceLibrary {
         path: path,
         durationMs: durationMs,
         album: m['album']?.toString(),
+        genre: m['genre']?.toString(),
+        composer: m['composer']?.toString(),
         contentUri: m['contentUri']?.toString(),
       ));
     }

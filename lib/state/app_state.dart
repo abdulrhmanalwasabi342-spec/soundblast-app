@@ -12,6 +12,7 @@ import '../api/models.dart';
 import '../api/trpc_client.dart';
 import '../services/device_library.dart';
 import '../services/downloads.dart';
+import '../services/local_playlists.dart';
 
 /// Central app state: auth session, library (likes/favorites/playlists),
 /// home cache for offline, and the single audio player used by the mini
@@ -49,6 +50,9 @@ class AppState extends ChangeNotifier {
   final DeviceLibrary deviceLibrary = DeviceLibrary();
   List<DeviceSong> deviceSongs = [];
   bool deviceSongsLoaded = false;
+
+  /// Playlists stored only on this phone (on-device songs, no account).
+  final LocalPlaylistStore localPlaylists = LocalPlaylistStore();
 
   /// Set by the UI shell (which owns a BuildContext): asked once, at first
   /// play, before playback starts — see PermissionFlow.
@@ -118,6 +122,8 @@ class AppState extends ChangeNotifier {
     notifyListeners();
     downloads.addListener(notifyListeners);
     unawaited(downloads.load());
+    localPlaylists.addListener(notifyListeners);
+    unawaited(localPlaylists.load());
     unawaited(_refreshAuth());
   }
 

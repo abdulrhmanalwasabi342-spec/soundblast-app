@@ -65,6 +65,12 @@ class SoundBlastApi {
     return m['url']?.toString();
   }
 
+  /// App GitHub sign-in: swap the one-time code from the browser flow for
+  /// the session cookie.
+  Future<void> exchangeAppCode(String code) async {
+    await client.mutation('localAuth.exchangeAppCode', {'code': code});
+  }
+
   // ---- songs ------------------------------------------------------------
   Future<List<Song>> allSongs() async {
     final json = await client.query('songs.list');

@@ -1,24 +1,26 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_web_auth_2/flutter_web_auth_2.dart';
 import 'package:provider/provider.dart';
-import 'package:webview_flutter/webview_flutter.dart';
-import 'package:webview_flutter_android/webview_flutter_android.dart';
 
 import '../state/app_state.dart';
 import '../widgets/common.dart';
 
-/// Sign in with GitHub, using the backend's own OAuth flow
-/// (server/_core/githubAuth.ts):
-///   GET https://soundblast.onrender.com/api/auth/github
-///     → 302 to github.com/login/oauth/authorize
-///     → GET /api/auth/github/callback
-///     → sets the httpOnly `sound_local_session` cookie, 302 to /
+/// Sign in with GitHub, in the system browser — never a website inside the
+/// app.
 ///
-/// The flow is a pure web redirect flow with no deep-link/token hand-off,
-/// so the app runs it in an in-app WebView and then reads the session
-/// cookie out of the WebView's cookie jar into the app's own tRPC client.
-/// The cookie is httpOnly — JavaScript can never see it; only the
-/// platform cookie manager can. If GitHub login is not configured on the
-/// server, the start URL returns 503 and the screen reports that.
+///   GET https://soundblast.onrender.com/api/auth/github?app=1
+///     → 302 to github.com/login/oauth/authorize (opens in the browser)
+///     → GET /api/auth/github/callback
+///     → 302 to soundblast://oauth?code=… (the app reopens automatically)
+///     → localAuth.exchangeAppCode swaps the one-time code for the session
+///       cookie, exactly like email/password login.
+///
+/// The browser's cookies never reach the app, which is why the server hands
+/// back a single-use code instead of signing the browser session in. The
+/// previous in-app WebView flow is gone: it showed the Render deploy page
+/// whenever the server was restarting, and a website inside the app is not
+/// how sign-in should feel.
 class GitHubOAuthScreen extends StatefulWidget {
   const GitHubOAuthScreen({super.key});
 
@@ -28,98 +30,57 @@ class GitHubOAuthScreen extends StatefulWidget {
 
 class _GitHubOAuthScreenState extends State<GitHubOAuthScreen> {
   static const _site = 'https://soundblast.onrender.com';
-  late final WebViewController _controller;
-  bool _checking = false;
+  bool _busy = false;
   bool _done = false;
   String? _note;
 
   @override
   void initState() {
     super.initState();
-    _controller = WebViewController()
-      ..setJavaScriptMode(JavaScriptMode.unrestricted)
-      ..setNavigationDelegate(
-        NavigationDelegate(
-          onUrlChange: (change) {
-            final url = change.url;
-            if (url != null) _maybeFinished(url);
-          },
-          onPageFinished: (url) => _maybeFinished(url),
-          onWebResourceError: (err) {
-            if (mounted) {
-              setState(() => _note =
-                  'Could not load the sign-in page (${err.description}). Check your connection and try again.');
-            }
-          },
-        ),
-      )
-      ..loadRequest(Uri.parse('$_site/api/auth/github'));
+    WidgetsBinding.instance.addPostFrameCallback((_) => _start());
   }
 
-  void _maybeFinished(String url) {
-    if (_done || _checking) return;
-    final uri = Uri.tryParse(url);
-    if (uri == null) return;
-    // Back on the SoundBlast site after GitHub (the callback 302s to /).
-    // github.com pages are ignored — the user is still signing in there.
-    if (uri.host == 'soundblast.onrender.com') {
-      _checkSession();
-    }
-  }
-
-  Future<void> _checkSession() async {
-    if (_checking || _done) return;
-    setState(() => _checking = true);
+  Future<void> _start() async {
+    if (_busy || _done) return;
+    setState(() {
+      _busy = true;
+      _note = null;
+    });
     try {
-      // The cross-platform WebViewCookieManager no longer exposes
-      // getCookies (webview_flutter 4.13+); the Android implementation
-      // does. The cookie is httpOnly, so only the platform cookie manager
-      // can read it — JavaScript never can.
-      if (WebViewPlatform.instance is! AndroidWebViewPlatform) {
-        throw UnsupportedError(
-            'GitHub sign-in cookie extraction is Android-only.');
-      }
-      final manager = WebViewCookieManager();
-      final androidManager =
-          manager.platform as AndroidWebViewCookieManager;
-      final cookies = await androidManager.getCookies(Uri.parse(_site));
-      var found = false;
-      for (final c in cookies) {
-        if (c.name == 'sound_local_session' && c.value.isNotEmpty) {
-          await context
-              .read<AppState>()
-              .trpc
-              .importCookie(c.name, c.value);
-          found = true;
-        }
-      }
-      if (!found) {
-        // Cookie may be set but not yet visible, or the user landed on the
-        // home page without signing in. Leave the WebView open.
-        if (mounted) setState(() => _checking = false);
-        return;
+      final result = await FlutterWebAuth2.authenticate(
+        url: '$_site/api/auth/github?app=1',
+        callbackUrlScheme: 'soundblast',
+      );
+      if (!mounted) return;
+      final code = Uri.tryParse(result)?.queryParameters['code'];
+      if (code == null || code.isEmpty) {
+        throw Exception('GitHub did not return a sign-in code.');
       }
       final state = context.read<AppState>();
+      await state.api.exchangeAppCode(code);
       final user = await state.api.me();
       if (user == null) {
-        if (mounted) {
-          setState(() {
-            _checking = false;
-            _note =
-                'GitHub sign-in did not create a session. Please try again.';
-          });
-        }
-        return;
+        throw Exception('GitHub sign-in did not create a session.');
       }
       state.setUser(user);
       await state.refreshLibrary();
       if (!mounted) return;
       setState(() => _done = true);
       Navigator.of(context).pushNamedAndRemoveUntil('/', (_) => false);
+    } on PlatformException catch (e) {
+      // The user closed the browser tab without signing in.
+      if (mounted) {
+        setState(() {
+          _busy = false;
+          _note = e.code == 'CANCELED'
+              ? 'Sign-in was cancelled. Tap Retry to try again.'
+              : 'Could not open the browser (${e.message}). Check your connection and try again.';
+        });
+      }
     } catch (e) {
       if (mounted) {
         setState(() {
-          _checking = false;
+          _busy = false;
           _note = e.toString();
         });
       }
@@ -130,60 +91,34 @@ class _GitHubOAuthScreenState extends State<GitHubOAuthScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Sign in with GitHub')),
-      body: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(12),
-            child: Text(
-              'You will sign in with GitHub in this window. When GitHub sends you back to SoundBlast, the app signs you in automatically.',
-              style:
-                  const TextStyle(color: SbColors.muted, fontSize: 13),
+      body: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.open_in_browser,
+                size: 56, color: SbColors.accent),
+            const SizedBox(height: 24),
+            const Text(
+              'GitHub opens in your browser. Sign in there, and you come straight back to SoundBlast — no website inside the app.',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: SbColors.muted, fontSize: 14),
             ),
-          ),
-          if (_note != null)
-            Padding(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Text(_note!,
-                        style: const TextStyle(color: SbColors.danger)),
-                  ),
-                  const SizedBox(width: 8),
-                  OutlinedButton(
-                    // The GitHub page can fail to load on a flaky connection
-                    // (e.g. QUIC errors) — retry instead of a dead screen.
-                    onPressed: () {
-                      setState(() => _note = null);
-                      _controller.loadRequest(
-                          Uri.parse('$_site/api/auth/github'));
-                    },
-                    child: const Text('Retry'),
-                  ),
-                ],
-              ),
-            ),
-          Expanded(child: WebViewWidget(controller: _controller)),
-          SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.all(12),
-              child: SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: _checking ? null : _checkSession,
-                  child: _checking
-                      ? const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2))
-                      : const Text(
-                          "I've signed in — check my account"),
-                ),
-              ),
-            ),
-          ),
-        ],
+            const SizedBox(height: 24),
+            if (_busy) const CircularProgressIndicator(),
+            if (_note != null) ...[
+              Text(_note!,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(color: SbColors.danger)),
+              const SizedBox(height: 16),
+              OutlinedButton(onPressed: _start, child: const Text('Retry')),
+            ],
+            if (!_busy && _note == null)
+              ElevatedButton(
+                  onPressed: _start,
+                  child: const Text('Open GitHub sign-in')),
+          ],
+        ),
       ),
     );
   }
