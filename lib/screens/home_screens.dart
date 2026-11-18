@@ -32,6 +32,12 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _showingCache = false;
   Timer? _cacheRetryTimer;
 
+  /// The raw reason the last refresh failed, shortened for the banner:
+  /// DNS failure, timeout, TLS error and refused connection all look the
+  /// same ("no internet") to the user, but they are different problems —
+  /// showing the reason is what lets the cause be found.
+  String? _lastLoadError;
+
   @override
   void initState() {
     super.initState();
@@ -87,13 +93,17 @@ class _HomeScreenState extends State<HomeScreen> {
         _genres = genres;
         _loading = false;
         _showingCache = false;
+        _lastLoadError = null;
       });
       await state.cacheHome(summary, freshSongs);
     } catch (e) {
       if (!mounted) return;
       if (_summary != null) {
         // The cache is already on screen; the refresh just failed quietly.
-        setState(() => _showingCache = true);
+        setState(() {
+          _showingCache = true;
+          _lastLoadError = _shortLoadError(e.toString());
+        });
         _scheduleCacheRetry();
       } else {
         final state2 = context.read<AppState>();
@@ -103,6 +113,7 @@ class _HomeScreenState extends State<HomeScreen> {
             _songs = state2.cachedSongs ?? [];
             _loading = false;
             _showingCache = true;
+            _lastLoadError = _shortLoadError(e.toString());
           });
           _scheduleCacheRetry();
         } else {
@@ -113,6 +124,20 @@ class _HomeScreenState extends State<HomeScreen> {
         }
       }
     }
+  }
+
+  /// Keep only the useful part of a load failure: the client wraps the
+  /// raw error as "Could not reach SoundBlast. ... (raw error)", so the
+  /// prefix and the outer parens are stripped and the raw reason (DNS,
+  /// timeout, TLS, refused) is what stays.
+  static String _shortLoadError(String e) {
+    const prefix = 'Could not reach SoundBlast. '
+        'Check your connection and try again. (';
+    var raw = e;
+    if (raw.startsWith(prefix)) raw = raw.substring(prefix.length);
+    if (raw.endsWith(')')) raw = raw.substring(0, raw.length - 1);
+    if (raw.length > 160) raw = '${raw.substring(0, 160)}…';
+    return raw;
   }
 
   /// Silent retries while the cache banner is showing: the first one
@@ -192,19 +217,36 @@ class _HomeScreenState extends State<HomeScreen> {
                             color: SbColors.surface2,
                             borderRadius: BorderRadius.circular(12),
                           ),
-                          child: Row(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Expanded(
-                                child: Text(
-                                  context.l10n.offlineShowingCache,
-                                  style: const TextStyle(
-                                      color: SbColors.muted),
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: Text(
+                                      context.l10n.offlineShowingCache,
+                                      style: const TextStyle(
+                                          color: SbColors.muted),
+                                    ),
+                                  ),
+                                  TextButton(
+                                    onPressed: _load,
+                                    child: Text(context.l10n.retry),
+                                  ),
+                                ],
+                              ),
+                              if (_lastLoadError != null)
+                                Padding(
+                                  padding: const EdgeInsets.only(
+                                      left: 4, right: 4, bottom: 6),
+                                  child: Text(
+                                    _lastLoadError!,
+                                    style: const TextStyle(
+                                        color: SbColors.muted, fontSize: 11),
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
                                 ),
-                              ),
-                              TextButton(
-                                onPressed: _load,
-                                child: Text(context.l10n.retry),
-                              ),
                             ],
                           ),
                         ),

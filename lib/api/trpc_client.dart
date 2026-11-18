@@ -179,7 +179,7 @@ class TrpcClient {
     try {
       res = await _http
           .get(uri, headers: _headers)
-          .timeout(const Duration(seconds: 60));
+          .timeout(const Duration(seconds: 180));
     } catch (e) {
       throw ApiException(
           'Could not reach SoundBlast. Check your connection and try again. ($e)');
@@ -202,7 +202,7 @@ class TrpcClient {
     try {
       res = await _http
           .post(uri, headers: _headers, body: body)
-          .timeout(const Duration(seconds: 120));
+          .timeout(const Duration(seconds: 180));
     } catch (e) {
       throw ApiException(
           'Could not reach SoundBlast. Check your connection and try again. ($e)');
