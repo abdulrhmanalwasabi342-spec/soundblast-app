@@ -85,7 +85,7 @@ class _SearchScreenState extends State<SearchScreen> {
             child: TextField(
               controller: _controller,
               decoration: InputDecoration(
-                hintText: 'Search songs, artists, genres…',
+                hintText: context.l10n.searchHint,
                 prefixIcon: const Icon(Icons.search),
                 suffixIcon: hasQuery
                     ? IconButton(
@@ -534,7 +534,7 @@ class _LibraryScreenState extends State<LibraryScreen>
               ...DeviceCategory.values.map((c) {
                 final count = c == DeviceCategory.tracks
                     ? state.deviceSongs.length
-                    : groupDeviceSongs(c, state.deviceSongs).length;
+                    : groupDeviceSongs(context, c, state.deviceSongs).length;
                 return ListTile(
                   leading: Container(
                     width: 48,
@@ -612,9 +612,9 @@ class _LibraryScreenState extends State<LibraryScreen>
                 builder: (context, askedSnap) {
                   if ((askedSnap.data ?? 0) >= 2) {
                     return PermissionFlow.permissionBlockedNote(
+                      context,
                       title: context.l10n.accessOffTitle,
-                      body:
-                          'You declined the audio permission twice, so SoundBlast will not ask again. You can still allow it any time in the app settings — downloaded SoundBlast songs keep working either way.',
+                      body: context.l10n.permissionDeclinedTwice,
                     );
                   }
                   return const SizedBox.shrink();
@@ -867,13 +867,13 @@ class _CreatePlaylistScreenState extends State<CreatePlaylistScreen> {
         children: [
           TextField(
             controller: _name,
-            decoration: const InputDecoration(labelText: 'Playlist name'),
+            decoration: InputDecoration(labelText: context.l10n.playlistNameHint),
           ),
           const SizedBox(height: 12),
           TextField(
             controller: _desc,
             decoration:
-                const InputDecoration(labelText: 'Description (optional)'),
+                InputDecoration(labelText: context.l10n.descriptionOptional),
             maxLines: 3,
           ),
           const SizedBox(height: 8),
@@ -1116,7 +1116,7 @@ class _PlaylistDetailsScreenState extends State<PlaylistDetailsScreen> {
         title: Text(context.l10n.renamePlaylist),
         content: TextField(
             controller: controller,
-            decoration: const InputDecoration(labelText: 'Name')),
+            decoration: InputDecoration(labelText: context.l10n.fieldName)),
         actions: [
           TextButton(
               onPressed: () => Navigator.of(ctx).pop(),

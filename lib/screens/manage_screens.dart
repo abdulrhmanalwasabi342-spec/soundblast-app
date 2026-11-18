@@ -23,25 +23,34 @@ class ProfileScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
           leading: const DrawerMenuButton(),
-          title: const Text('Profile')),
+          title: Text(context.l10n.profile),
+          actions: [
+            if (user != null)
+              IconButton(
+                icon: const Icon(Icons.edit),
+                tooltip: context.l10n.editProfile,
+                onPressed: () =>
+                    Navigator.of(context).pushNamed('/profile/edit'),
+              ),
+          ]),
       body: user == null
           ? EmptyState(
               icon: Icons.person_outline,
-              title: 'You are browsing as a guest',
+              title: context.l10n.guestTitle,
               message:
-                  'Log in or sign up to like songs, keep favorites, build playlists, upload music and follow artists.',
+                  context.l10n.guestMessage,
               action: Column(
                 children: [
                   ElevatedButton(
                     onPressed: () =>
                         Navigator.of(context).pushNamed('/login'),
-                    child: const Text('Log in'),
+                    child: Text(context.l10n.login),
                   ),
                   const SizedBox(height: 8),
                   TextButton(
                     onPressed: () =>
                         Navigator.of(context).pushNamed('/signup'),
-                    child: const Text('Create an account'),
+                    child: Text(context.l10n.createAccount),
                   ),
                 ],
               ),
@@ -77,7 +86,7 @@ class ProfileScreen extends StatelessWidget {
                                           fontWeight: FontWeight.w800)),
                                 ),
                                 if (user.isAdmin)
-                                  const Padding(
+                                  Padding(
                                     padding: EdgeInsets.only(left: 6),
                                     child: Icon(Icons.verified,
                                         size: 18, color: SbColors.accent),
@@ -89,10 +98,10 @@ class ProfileScreen extends StatelessWidget {
                                     color: SbColors.muted)),
                             Text(
                               user.isAdmin
-                                  ? 'Administrator'
+                                  ? context.l10n.roleAdmin
                                   : user.isArtist
-                                      ? 'Artist'
-                                      : 'Listener',
+                                      ? context.l10n.roleArtist
+                                      : context.l10n.roleListener,
                               style: const TextStyle(
                                   color: SbColors.accent),
                             ),
@@ -103,17 +112,19 @@ class ProfileScreen extends StatelessWidget {
                   ),
                 ),
                 const Divider(color: SbColors.border),
-                _row(context, Icons.favorite, 'Liked songs',
-                    '${state.likedSongs.length}', () {}),
-                _row(context, Icons.bookmark, 'Favorites',
-                    '${state.myFavorites.length}', () {}),
-                _row(context, Icons.playlist_play, 'Playlists',
+                _row(context, Icons.favorite, context.l10n.navLikedSongs,
+                    '${state.likedSongs.length}',
+                    () => Navigator.of(context).pushNamed('/liked')),
+                _row(context, Icons.bookmark, context.l10n.navFavorites,
+                    '${state.myFavorites.length}',
+                    () => Navigator.of(context).pushNamed('/favorites')),
+                _row(context, Icons.playlist_play, context.l10n.navPlaylists,
                     '${state.playlists.length}',
                     () => Navigator.of(context).pushNamed('/playlists')),
                 const Divider(color: SbColors.border),
                 ListTile(
                   leading: const Icon(Icons.dashboard),
-                  title: const Text('Dashboard'),
+                  title: Text(context.l10n.navDashboard),
                   trailing: const Icon(Icons.chevron_right),
                   onTap: () =>
                       Navigator.of(context).pushNamed('/dashboard'),
@@ -121,31 +132,31 @@ class ProfileScreen extends StatelessWidget {
                 if (user.isArtist)
                   ListTile(
                     leading: const Icon(Icons.mic),
-                    title: const Text('Artist Studio'),
+                    title: Text(context.l10n.artistStudio),
                     trailing: const Icon(Icons.chevron_right),
                     onTap: () =>
                         Navigator.of(context).pushNamed('/artist-studio'),
                   ),
                 ListTile(
                   leading: const Icon(Icons.upload),
-                  title: const Text('Upload a song'),
+                  title: Text(context.l10n.uploadSong),
                   subtitle: user.isArtist
                       ? null
-                      : const Text('Artist accounts only'),
+                      : Text(context.l10n.artistAccountsOnly),
                   trailing: const Icon(Icons.chevron_right),
                   onTap: () =>
                       Navigator.of(context).pushNamed('/upload'),
                 ),
                 ListTile(
                   leading: const Icon(Icons.notifications),
-                  title: const Text('Notifications'),
+                  title: Text(context.l10n.notifications),
                   trailing: const Icon(Icons.chevron_right),
                   onTap: () =>
                       Navigator.of(context).pushNamed('/notifications'),
                 ),
                 ListTile(
                   leading: const Icon(Icons.tune),
-                  title: const Text('Notification preferences'),
+                  title: Text(context.l10n.notifPreferences),
                   trailing: const Icon(Icons.chevron_right),
                   onTap: () => Navigator.of(context)
                       .pushNamed('/notification-preferences'),
@@ -153,7 +164,7 @@ class ProfileScreen extends StatelessWidget {
                 if (user.isAdmin)
                   ListTile(
                     leading: const Icon(Icons.admin_panel_settings),
-                    title: const Text('Admin'),
+                    title: Text(context.l10n.admin),
                     trailing: const Icon(Icons.chevron_right),
                     onTap: () =>
                         Navigator.of(context).pushNamed('/admin'),
@@ -176,38 +187,38 @@ class ProfileScreen extends StatelessWidget {
                 const Divider(color: SbColors.border),
                 ListTile(
                   leading: const Icon(Icons.info),
-                  title: const Text('About SoundBlast'),
+                  title: Text(context.l10n.aboutSoundBlast),
                   onTap: () => Navigator.of(context).pushNamed('/about'),
                 ),
                 ListTile(
                   leading: const Icon(Icons.mail),
-                  title: const Text('Contact'),
+                  title: Text(context.l10n.contact),
                   onTap: () => Navigator.of(context).pushNamed('/contact'),
                 ),
                 ListTile(
                   leading: const Icon(Icons.policy),
-                  title: const Text('Terms, Privacy & Permissions'),
+                  title: Text(context.l10n.termsPrivacyPermissions),
                   onTap: () => Navigator.of(context).pushNamed('/policy'),
                 ),
                 ListTile(
                   leading: const Icon(Icons.feedback),
-                  title: const Text('Feedback'),
+                  title: Text(context.l10n.navFeedback),
                   onTap: () => Navigator.of(context).pushNamed('/feedback'),
                 ),
                 ListTile(
                   leading: const Icon(Icons.map),
-                  title: const Text('Sitemap'),
+                  title: Text(context.l10n.sitemap),
                   onTap: () => Navigator.of(context).pushNamed('/sitemap'),
                 ),
                 const Divider(color: SbColors.border),
                 ListTile(
                   leading: const Icon(Icons.logout, color: SbColors.danger),
-                  title: const Text('Log out',
+                  title: Text(context.l10n.logout,
                       style: TextStyle(color: SbColors.danger)),
                   onTap: () async {
                     final ok = await confirmDialog(context,
-                        title: 'Log out',
-                        message: 'Log out of SoundBlast on this device?');
+                        title: context.l10n.logout,
+                        message: context.l10n.logoutConfirm);
                     if (ok) {
                       await context.read<AppState>().logout();
                     }
@@ -357,44 +368,44 @@ class _UploadSongScreenState extends State<UploadSongScreen> {
   Future<void> _publish() async {
     final state = context.read<AppState>();
     if (state.user == null) {
-      showSnack(context, 'Log in first.');
+      showSnack(context, context.l10n.loginFirst);
       return;
     }
     if (!state.user!.isArtist) {
       showSnack(context,
-          'Only artist accounts can upload songs. Sign up as an artist to publish music.');
+          context.l10n.onlyArtistsUpload);
       return;
     }
     if (_title.text.trim().isEmpty || _audio == null || _image == null) {
-      showSnack(context, 'Add a title, audio file, and release artwork to continue.');
+      showSnack(context, context.l10n.uploadMissingFields);
       return;
     }
     if (!_rights) {
       showSnack(context,
-          'Please confirm you own the rights to publish this song.');
+          context.l10n.confirmRightsFirst);
       return;
     }
     final audioBytes = _audio!.bytes;
     final imageBytes = _image!.bytes;
     if (audioBytes == null || imageBytes == null) {
-      showSnack(context, 'Could not read the selected files.');
+      showSnack(context, context.l10n.couldNotReadFiles);
       return;
     }
     setState(() => _uploading = true);
     try {
-      setState(() => _stage = 'Uploading artwork…');
+      setState(() => _stage = context.l10n.uploadingArtwork);
       final imageResult = await state.api.uploadFile(
         base64Data: base64Encode(imageBytes),
         fileName: _image!.name,
         fileType: 'image/${_image!.extension ?? 'jpeg'}',
       );
-      setState(() => _stage = 'Uploading audio…');
+      setState(() => _stage = context.l10n.uploadingAudio);
       final audioResult = await state.api.uploadFile(
         base64Data: base64Encode(audioBytes),
         fileName: '${DateTime.now().millisecondsSinceEpoch}-${_audio!.name}',
         fileType: 'audio/${_audio!.extension ?? 'mpeg'}',
       );
-      setState(() => _stage = 'Publishing…');
+      setState(() => _stage = context.l10n.publishing);
       await state.api.uploadSong(
         title: _title.text.trim(),
         audioUrl: audioResult['url']?.toString() ?? '',
@@ -410,7 +421,7 @@ class _UploadSongScreenState extends State<UploadSongScreen> {
         albumId: _albumId,
       );
       if (!mounted) return;
-      showSnack(context, 'Song published.');
+      showSnack(context, context.l10n.songPublished);
       Navigator.of(context).pop();
     } catch (e) {
       if (mounted) showSnack(context, e.toString());
@@ -436,32 +447,32 @@ class _UploadSongScreenState extends State<UploadSongScreen> {
     final state = context.watch<AppState>();
     final user = state.user;
     return Scaffold(
-      appBar: AppBar(title: const Text('Upload a song')),
+      appBar: AppBar(title: Text(context.l10n.uploadSong)),
       body: ListView(
         padding: const EdgeInsets.all(20),
         children: [
           if (user == null)
-            const GatedFeature(
-              label: 'Upload a song',
-              reason: 'Log in as an artist to upload songs.',
+            GatedFeature(
+              label: context.l10n.uploadSong,
+              reason: context.l10n.loginAsArtistUpload,
               icon: Icons.upload,
             )
           else if (!user.isArtist)
-            const GatedFeature(
-              label: 'Upload a song',
+            GatedFeature(
+              label: context.l10n.uploadSong,
               reason:
-                  'Only artist accounts can upload songs. Your account is a listener account — create an artist account to publish music.',
+                  context.l10n.onlyArtistsUploadListener,
               icon: Icons.upload,
             )
           else ...[
             TextField(
               controller: _title,
-              decoration: const InputDecoration(labelText: 'Song title'),
+              decoration: InputDecoration(labelText: context.l10n.songTitle),
             ),
             const SizedBox(height: 16),
             DropdownButtonFormField<String>(
               initialValue: _genre,
-              decoration: const InputDecoration(labelText: 'Genre'),
+              decoration: InputDecoration(labelText: context.l10n.genre),
               items: _genres
                   .map((g) =>
                       DropdownMenuItem(value: g, child: Text(g)))
@@ -471,17 +482,17 @@ class _UploadSongScreenState extends State<UploadSongScreen> {
             const SizedBox(height: 16),
             TextField(
               controller: _albumName,
-              decoration: const InputDecoration(
-                  labelText: 'Album name (optional)'),
+              decoration: InputDecoration(
+                  labelText: context.l10n.albumNameOptional),
             ),
             if (_myAlbums.isNotEmpty) ...[
               const SizedBox(height: 16),
               DropdownButtonFormField<int?>(
                 initialValue: _albumId,
-                decoration: const InputDecoration(
-                    labelText: 'Publish into one of your releases (optional)'),
+                decoration: InputDecoration(
+                    labelText: context.l10n.publishIntoReleaseOptional),
                 items: [
-                  const DropdownMenuItem(value: null, child: Text('None')),
+                  DropdownMenuItem(value: null, child: Text(context.l10n.noneOption)),
                   ..._myAlbums.map((a) => DropdownMenuItem(
                       value: a.id, child: Text(a.title))),
                 ],
@@ -492,20 +503,20 @@ class _UploadSongScreenState extends State<UploadSongScreen> {
             ListTile(
               leading: const Icon(Icons.audio_file),
               title: Text(_audio == null
-                  ? 'Choose audio file (MP3, WAV, or M4A)'
+                  ? context.l10n.chooseAudioFile
                   : _audio!.name),
               subtitle: _audio == null
                   ? null
                   : Text(_durationSec > 0
-                      ? 'Duration: ${_durationSec ~/ 60}:${(_durationSec % 60).toString().padLeft(2, '0')}'
-                      : 'Audio selected'),
+                      ? context.l10n.durationLabel('${_durationSec ~/ 60}:${(_durationSec % 60).toString().padLeft(2, '0')}')
+                      : context.l10n.audioSelected),
               trailing: const Icon(Icons.chevron_right),
               onTap: _pickAudio,
             ),
             ListTile(
               leading: const Icon(Icons.image),
               title: Text(_image == null
-                  ? 'Choose release artwork (PNG, JPG, or WEBP)'
+                  ? context.l10n.chooseArtwork
                   : _image!.name),
               trailing: const Icon(Icons.chevron_right),
               onTap: _pickImage,
@@ -513,8 +524,8 @@ class _UploadSongScreenState extends State<UploadSongScreen> {
             CheckboxListTile(
               value: _rights,
               onChanged: (v) => setState(() => _rights = v ?? false),
-              title: const Text(
-                  'I confirm I own the rights to publish this song.',
+              title: Text(
+                  context.l10n.confirmRights,
                   style: TextStyle(fontSize: 14)),
               controlAffinity: ListTileControlAffinity.leading,
               contentPadding: EdgeInsets.zero,
@@ -539,12 +550,12 @@ class _UploadSongScreenState extends State<UploadSongScreen> {
               width: double.infinity,
               child: ElevatedButton(
                 onPressed: _uploading ? null : _publish,
-                child: const Text('Publish song'),
+                child: Text(context.l10n.publishSong),
               ),
             ),
             const SizedBox(height: 12),
-            const Text(
-              'Audio is uploaded to the same storage as the website, then the server validates and optimizes it. Large files may take a while on a slow connection.',
+            Text(
+              context.l10n.uploadNote,
               style: TextStyle(color: SbColors.muted, fontSize: 13),
             ),
           ],
@@ -603,7 +614,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Widget build(BuildContext context) {
     final state = context.watch<AppState>();
     return Scaffold(
-      appBar: AppBar(title: const Text('Dashboard')),
+      appBar: AppBar(title: Text(context.l10n.navDashboard)),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : _error != null
@@ -615,8 +626,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     children: [
                       Text(
                         state.user == null
-                            ? 'SoundBlast at a glance'
-                            : 'Welcome back, ${state.user!.displayName}',
+                            ? context.l10n.dashboardGlance
+                            : context.l10n.welcomeBackName(state.user!.displayName),
                         style: const TextStyle(
                             fontSize: 22, fontWeight: FontWeight.w800),
                       ),
@@ -629,38 +640,38 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         mainAxisSpacing: 12,
                         childAspectRatio: 1.5,
                         children: [
-                          _stat('Songs',
+                          _stat(context.l10n.songs,
                               '${_stats?['totalSongs'] ?? 0}'),
-                          _stat('Listeners',
+                          _stat(context.l10n.statListeners,
                               '${_stats?['totalUsers'] ?? 0}'),
-                          _stat('Streams',
+                          _stat(context.l10n.statStreams,
                               '${_stats?['totalStreams'] ?? 0}'),
-                          _stat('Visitors', '$_visitors'),
-                          _stat('Likes', '${_stats?['totalLikes'] ?? 0}'),
-                          _stat('Comments',
+                          _stat(context.l10n.statVisitors, '$_visitors'),
+                          _stat(context.l10n.statLikes, '${_stats?['totalLikes'] ?? 0}'),
+                          _stat(context.l10n.comments,
                               '${_stats?['totalComments'] ?? 0}'),
                         ],
                       ),
                       const SizedBox(height: 16),
                       if (state.user != null) ...[
-                        const SectionHeader(title: 'Your library'),
+                        SectionHeader(title: context.l10n.yourLibrary),
                         ListTile(
                           leading: const Icon(Icons.favorite),
-                          title: const Text('Liked songs'),
+                          title: Text(context.l10n.navLikedSongs),
                           trailing: Text('${state.likedSongs.length}'),
                           onTap: () => Navigator.of(context)
                               .pushNamed('/favorites'),
                         ),
                         ListTile(
                           leading: const Icon(Icons.bookmark),
-                          title: const Text('Favorites'),
+                          title: Text(context.l10n.navFavorites),
                           trailing: Text('${state.myFavorites.length}'),
                           onTap: () => Navigator.of(context)
                               .pushNamed('/favorites'),
                         ),
                         ListTile(
                           leading: const Icon(Icons.playlist_play),
-                          title: const Text('Playlists'),
+                          title: Text(context.l10n.navPlaylists),
                           trailing: Text('${state.playlists.length}'),
                           onTap: () => Navigator.of(context)
                               .pushNamed('/playlists'),
@@ -668,19 +679,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       ] else
                         EmptyState(
                           icon: Icons.person_outline,
-                          title: 'Log in for your personal dashboard',
+                          title: context.l10n.loginForDashboard,
                           message:
-                              'Platform totals above are public. Your library, uploads and studio need an account.',
+                              context.l10n.dashboardGuestNote,
                           action: ElevatedButton(
                             onPressed: () => Navigator.of(context)
                                 .pushNamed('/login'),
-                            child: const Text('Log in'),
+                            child: Text(context.l10n.login),
                           ),
                         ),
                       if (state.user?.isArtist == true)
                         ListTile(
                           leading: const Icon(Icons.mic),
-                          title: const Text('Open Artist Studio'),
+                          title: Text(context.l10n.openArtistStudio),
                           trailing:
                               const Icon(Icons.chevron_right),
                           onTap: () => Navigator.of(context)
@@ -690,7 +701,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         ListTile(
                           leading:
                               const Icon(Icons.admin_panel_settings),
-                          title: const Text('Open Admin'),
+                          title: Text(context.l10n.openAdmin),
                           trailing:
                               const Icon(Icons.chevron_right),
                           onTap: () =>
@@ -800,26 +811,25 @@ class _ArtistStudioScreenState extends State<ArtistStudioScreen> {
     final state = context.watch<AppState>();
     final user = state.user;
     return Scaffold(
-      appBar: AppBar(title: const Text('Artist Studio')),
+      appBar: AppBar(title: Text(context.l10n.artistStudio)),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : user == null
               ? EmptyState(
                   icon: Icons.lock_outline,
-                  title: 'Log in as an artist',
-                  message: 'Artist Studio needs an artist account.',
+                  title: context.l10n.loginAsArtist,
+                  message: context.l10n.studioNeedsArtist,
                   action: ElevatedButton(
                     onPressed: () =>
                         Navigator.of(context).pushNamed('/login'),
-                    child: const Text('Log in'),
+                    child: Text(context.l10n.login),
                   ),
                 )
               : !user.isArtist
-                  ? const EmptyState(
+                  ? EmptyState(
                       icon: Icons.mic_off_outlined,
-                      title: 'Artist accounts only',
-                      message:
-                          'Your account is a listener account. Sign up as an artist to open the studio.',
+                      title: context.l10n.artistAccountsOnly,
+                      message: context.l10n.listenerCannotOpenStudio,
                     )
                   : _error != null
                       ? ErrorView(message: _error!, onRetry: _load)
@@ -830,13 +840,13 @@ class _ArtistStudioScreenState extends State<ArtistStudioScreen> {
                             children: [
                               Row(
                                 children: [
-                                  _miniStat('Songs',
+                                  _miniStat(context.l10n.songs,
                                       '${_stats?['songCount'] ?? 0}'),
-                                  _miniStat('Plays',
+                                  _miniStat(context.l10n.statPlays,
                                       '${_stats?['totalPlays'] ?? 0}'),
-                                  _miniStat('Likes',
+                                  _miniStat(context.l10n.statLikes,
                                       '${_stats?['totalLikes'] ?? 0}'),
-                                  _miniStat('Followers',
+                                  _miniStat(context.l10n.statFollowers,
                                       '${_stats?['followerCount'] ?? 0}'),
                                 ],
                               ),
@@ -845,7 +855,7 @@ class _ArtistStudioScreenState extends State<ArtistStudioScreen> {
                                   padding:
                                       const EdgeInsets.only(top: 12),
                                   child: Text(
-                                    'Activation: ${_activation!['status'] ?? _activation!['stage'] ?? '—'}',
+                                    context.l10n.activationStatus('${_activation!['status'] ?? _activation!['stage'] ?? '—'}'),
                                     style: const TextStyle(
                                         color: SbColors.muted),
                                   ),
@@ -856,7 +866,7 @@ class _ArtistStudioScreenState extends State<ArtistStudioScreen> {
                                   padding:
                                       const EdgeInsets.only(top: 8),
                                   child: Text(
-                                    'Last 7 days: ${_performance!['totalPlays'] ?? _performance!['plays'] ?? '—'} plays',
+                                    context.l10n.last7DaysPlays('${_performance!['totalPlays'] ?? _performance!['plays'] ?? '—'}'),
                                     style: const TextStyle(
                                         color: SbColors.muted),
                                   ),
@@ -868,13 +878,13 @@ class _ArtistStudioScreenState extends State<ArtistStudioScreen> {
                                   onPressed: () => Navigator.of(context)
                                       .pushNamed('/upload'),
                                   icon: const Icon(Icons.upload),
-                                  label: const Text('Upload a new song'),
+                                  label: Text(context.l10n.uploadNewSong),
                                 ),
                               ),
-                              const SectionHeader(title: 'My songs'),
+                              SectionHeader(title: context.l10n.mySongs),
                               if (_songs.isEmpty)
-                                const Text(
-                                    'You have not published any songs yet.',
+                                Text(
+                                    context.l10n.noSongsPublished,
                                     style: TextStyle(
                                         color: SbColors.muted))
                               else
@@ -883,7 +893,7 @@ class _ArtistStudioScreenState extends State<ArtistStudioScreen> {
                                           url: s.imageUrl, size: 48),
                                       title: Text(s.title),
                                       subtitle: Text(
-                                          '${s.genre} • ${formatPlays(s.playCount)}'),
+                                          '${s.genre} • ${context.l10n.playsCount(formatCount(s.playCount))}'),
                                       trailing: IconButton(
                                         icon: const Icon(
                                             Icons.delete_outline,
@@ -891,9 +901,8 @@ class _ArtistStudioScreenState extends State<ArtistStudioScreen> {
                                         onPressed: () async {
                                           final ok =
                                               await confirmDialog(context,
-                                                  title: 'Delete song',
-                                                  message:
-                                                      'Delete "${s.title}" permanently?');
+                                                  title: context.l10n.deleteSong,
+                                                  message: context.l10n.deleteSongConfirm(s.title));
                                           if (ok) {
                                             try {
                                               await state.api
@@ -911,9 +920,9 @@ class _ArtistStudioScreenState extends State<ArtistStudioScreen> {
                                       onTap: () => state.playSong(s,
                                           fromQueue: _songs),
                                     )),
-                              const SectionHeader(title: 'My releases'),
+                              SectionHeader(title: context.l10n.myReleases),
                               if (_albums.isEmpty)
-                                const Text('No releases yet.',
+                                Text(context.l10n.noReleasesYet,
                                     style: TextStyle(
                                         color: SbColors.muted))
                               else
@@ -928,13 +937,12 @@ class _ArtistStudioScreenState extends State<ArtistStudioScreen> {
                                           .pushNamed('/albums/${a.id}',
                                               arguments: a),
                                     )),
-                              const SectionHeader(title: 'Share a post'),
+                              SectionHeader(title: context.l10n.sharePost),
                               TextField(
                                 controller: _postController,
-                                decoration: const InputDecoration(
-                                    hintText:
-                                        'Tell your followers something… (max 1000 characters)',
-                                    labelText: 'New post'),
+                                decoration: InputDecoration(
+                                    hintText: context.l10n.postHint,
+                                    labelText: context.l10n.newPost),
                                 maxLines: 3,
                                 maxLength: 1000,
                               ),
@@ -943,14 +951,14 @@ class _ArtistStudioScreenState extends State<ArtistStudioScreen> {
                                 children: [
                                   DropdownButton<String>(
                                     value: _postKind,
-                                    items: const [
+                                    items: [
                                       DropdownMenuItem(
                                           value: 'post',
-                                          child: Text('Post')),
+                                          child: Text(context.l10n.postKindPost)),
                                       DropdownMenuItem(
                                           value: 'recommendation',
                                           child:
-                                              Text('Recommendation')),
+                                              Text(context.l10n.postKindRecommendation)),
                                     ],
                                     onChanged: (v) => setState(
                                         () => _postKind = v ?? 'post'),
@@ -958,14 +966,14 @@ class _ArtistStudioScreenState extends State<ArtistStudioScreen> {
                                   const SizedBox(width: 12),
                                   DropdownButton<String>(
                                     value: _postVisibility,
-                                    items: const [
+                                    items: [
                                       DropdownMenuItem(
                                           value: 'public',
-                                          child: Text('Public')),
+                                          child: Text(context.l10n.visibilityPublic)),
                                       DropdownMenuItem(
                                           value: 'followers',
                                           child:
-                                              Text('Followers only')),
+                                              Text(context.l10n.followersOnly)),
                                     ],
                                     onChanged: (v) => setState(() =>
                                         _postVisibility = v ?? 'public'),
@@ -986,7 +994,7 @@ class _ArtistStudioScreenState extends State<ArtistStudioScreen> {
                                         await _load();
                                         if (mounted) {
                                           showSnack(
-                                              context, 'Post shared.');
+                                              context, context.l10n.postShared);
                                         }
                                       } catch (e) {
                                         if (mounted) {
@@ -995,13 +1003,13 @@ class _ArtistStudioScreenState extends State<ArtistStudioScreen> {
                                         }
                                       }
                                     },
-                                    child: const Text('Share'),
+                                    child: Text(context.l10n.share),
                                   ),
                                 ],
                               ),
-                              const SectionHeader(title: 'My posts'),
+                              SectionHeader(title: context.l10n.myPosts),
                               if (_posts.isEmpty)
-                                const Text('No posts yet.',
+                                Text(context.l10n.noPosts,
                                     style: TextStyle(
                                         color: SbColors.muted))
                               else
@@ -1013,7 +1021,7 @@ class _ArtistStudioScreenState extends State<ArtistStudioScreen> {
                                       child: ListTile(
                                         title: Text(p.body),
                                         subtitle: Text(
-                                            '${p.kind} • ${p.createdAt ?? ''}'),
+                                            '${p.kind == 'recommendation' ? context.l10n.postKindRecommendation : p.kind == 'post' ? context.l10n.postKindPost : p.kind} • ${p.createdAt ?? ''}'),
                                         trailing: IconButton(
                                           icon: const Icon(
                                               Icons.delete_outline,
@@ -1021,9 +1029,8 @@ class _ArtistStudioScreenState extends State<ArtistStudioScreen> {
                                           onPressed: () async {
                                             final ok = await confirmDialog(
                                                 context,
-                                                title: 'Delete post',
-                                                message:
-                                                    'Delete this post?');
+                                                title: context.l10n.deletePost,
+                                                message: context.l10n.deletePostConfirm);
                                             if (ok) {
                                               try {
                                                 await state.api
@@ -1121,7 +1128,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     final state = context.watch<AppState>();
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Notifications'),
+        title: Text(context.l10n.notifications),
         actions: [
           if (_items.any((n) => !n.isRead))
             TextButton(
@@ -1133,7 +1140,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                   if (mounted) showSnack(context, e.toString());
                 }
               },
-              child: const Text('Mark all read'),
+              child: Text(context.l10n.markAllRead),
             ),
         ],
       ),
@@ -1142,23 +1149,22 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           : state.user == null
               ? EmptyState(
                   icon: Icons.lock_outline,
-                  title: 'Log in to see notifications',
+                  title: context.l10n.loginToSeeNotifications,
                   message:
-                      'New releases from artists you follow arrive here.',
+                      context.l10n.notificationsEmptyHint,
                   action: ElevatedButton(
                     onPressed: () =>
                         Navigator.of(context).pushNamed('/login'),
-                    child: const Text('Log in'),
+                    child: Text(context.l10n.login),
                   ),
                 )
               : _error != null
                   ? ErrorView(message: _error!, onRetry: _load)
                   : _items.isEmpty
-                      ? const EmptyState(
+                      ? EmptyState(
                           icon: Icons.notifications_none,
-                          title: 'No notifications',
-                          message:
-                              'When artists you follow release new songs or share posts, you will see it here.',
+                          title: context.l10n.noNotifications,
+                          message: context.l10n.noNotificationsHint,
                         )
                       : RefreshIndicator(
                           onRefresh: _load,
@@ -1197,7 +1203,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                                                   }
                                                 }
                                               },
-                                              child: const Text('Mark read'),
+                                              child: Text(context.l10n.markRead),
                                             ),
                                     ))
                                 .toList(),
@@ -1263,33 +1269,32 @@ class _NotificationPreferencesScreenState
   Widget build(BuildContext context) {
     final state = context.watch<AppState>();
     return Scaffold(
-      appBar: AppBar(title: const Text('Notification preferences')),
+      appBar: AppBar(title: Text(context.l10n.notifPreferences)),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : state.user == null
               ? EmptyState(
                   icon: Icons.lock_outline,
-                  title: 'Log in first',
-                  message: 'Notification preferences belong to your account.',
+                  title: context.l10n.loginFirst,
+                  message: context.l10n.notifPrefsBelongAccount,
                   action: ElevatedButton(
                     onPressed: () =>
                         Navigator.of(context).pushNamed('/login'),
-                    child: const Text('Log in'),
+                    child: Text(context.l10n.login),
                   ),
                 )
               : ListView(
                   children: [
-                    const GatedFeature(
-                      label: 'Push notifications on this device',
+                    GatedFeature(
+                      label: context.l10n.pushNotificationsDevice,
                       reason:
-                          'Web Push (browser notifications) is not available in the Android app yet — new releases still arrive in your in-app Notifications inbox.',
+                          context.l10n.webPushUnavailable,
                       icon: Icons.notifications_active_outlined,
                     ),
                     const Divider(color: SbColors.border),
-                    const SectionHeader(
-                        title: 'Artists you follow',
-                        subtitle:
-                            'New releases from these artists appear in your Notifications inbox.'),
+                    SectionHeader(
+                        title: context.l10n.artistsYouFollow,
+                        subtitle: context.l10n.followedArtistsNote),
                     if (_error != null)
                       Padding(
                         padding: const EdgeInsets.all(16),
@@ -1298,10 +1303,10 @@ class _NotificationPreferencesScreenState
                                 const TextStyle(color: SbColors.muted)),
                       )
                     else if (_prefs.isEmpty)
-                      const Padding(
+                      Padding(
                         padding: EdgeInsets.all(16),
                         child: Text(
-                            'You are not following any artists yet.',
+                            context.l10n.notFollowingArtists,
                             style: TextStyle(color: SbColors.muted)),
                       )
                     else
@@ -1311,9 +1316,9 @@ class _NotificationPreferencesScreenState
                         return ListTile(
                           leading: const Icon(Icons.person),
                           title: Text(
-                              '${m['stageName'] ?? m['artistName'] ?? 'Artist'}'),
+                              '${m['stageName'] ?? m['artistName'] ?? context.l10n.roleArtist}'),
                           subtitle: Text(
-                              'Notifications: ${m['enabled'] == false ? 'off' : 'on'}'),
+                              context.l10n.notificationsState(m['enabled'] == false ? context.l10n.switchOff : context.l10n.switchOn)),
                         );
                       }),
                   ],
@@ -1329,25 +1334,25 @@ class AboutScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('About SoundBlast')),
+      appBar: AppBar(title: Text(context.l10n.aboutSoundBlast)),
       body: ListView(
         padding: const EdgeInsets.all(24),
-        children: const [
+        children: [
           Text('SoundBlast',
               style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900)),
           SizedBox(height: 12),
           Text(
-            'SoundBlast is a music platform for independent artists and the listeners who love them. Discover new songs, follow artists, build playlists, and — if you make music — publish your own releases and reach new ears.',
+            context.l10n.aboutBody1,
             style: TextStyle(fontSize: 15),
           ),
           SizedBox(height: 16),
           Text(
-            'Everything you hear here is published by real artists on the platform. Likes, comments, follows and playlists are shared across the website and this app, because both talk to the same SoundBlast backend.',
+            context.l10n.aboutBody2,
             style: TextStyle(color: SbColors.muted, fontSize: 15),
           ),
           SizedBox(height: 16),
           Text(
-            'Version 1.0.0 — Android app',
+            context.l10n.appVersionLabel,
             style: TextStyle(color: SbColors.muted, fontSize: 13),
           ),
         ],
@@ -1366,7 +1371,7 @@ class ContactScreen extends StatelessWidget {
       await launchUrl(uri, mode: LaunchMode.externalApplication);
     } else {
       if (context.mounted) {
-        showSnack(context, 'Could not open the website.');
+        showSnack(context, context.l10n.couldNotOpenWebsite);
       }
     }
   }
@@ -1374,27 +1379,27 @@ class ContactScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Contact')),
+      appBar: AppBar(title: Text(context.l10n.contact)),
       body: ListView(
         padding: const EdgeInsets.all(24),
         children: [
-          const Text('Get in touch',
+          Text(context.l10n.getInTouch,
               style: TextStyle(fontSize: 24, fontWeight: FontWeight.w800)),
           const SizedBox(height: 12),
-          const Text(
-            'Questions, problems, or a report about content on SoundBlast? Send feedback from the Feedback page — it goes straight to the SoundBlast team — or visit the website contact page.',
+          Text(
+            context.l10n.contactBody,
             style: TextStyle(color: SbColors.muted, fontSize: 15),
           ),
           const SizedBox(height: 24),
           ListTile(
             leading: const Icon(Icons.feedback),
-            title: const Text('Send feedback'),
+            title: Text(context.l10n.sendFeedback),
             trailing: const Icon(Icons.chevron_right),
             onTap: () => Navigator.of(context).pushNamed('/feedback'),
           ),
           ListTile(
             leading: const Icon(Icons.language),
-            title: const Text('Open the SoundBlast website'),
+            title: Text(context.l10n.openWebsite),
             subtitle: const Text('soundblast.onrender.com'),
             trailing: const Icon(Icons.open_in_new),
             onTap: () => _openSite(context),
@@ -1412,39 +1417,39 @@ class PolicyScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Terms, Privacy & Permissions')),
+      appBar: AppBar(title: Text(context.l10n.termsPrivacyPermissions)),
       body: ListView(
         padding: const EdgeInsets.all(24),
-        children: const [
-          Text('Terms of use',
+        children: [
+          Text(context.l10n.termsOfUse,
               style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800)),
           SizedBox(height: 8),
           Text(
-            'By using SoundBlast you agree to use the platform respectfully: publish only music you own the rights to, do not upload content that infringes copyright, and do not harass other users. Artists confirm they own the rights to every song they publish.',
+            context.l10n.termsBody,
             style: TextStyle(color: SbColors.muted, fontSize: 15),
           ),
           SizedBox(height: 20),
-          Text('Privacy',
+          Text(context.l10n.privacy,
               style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800)),
           SizedBox(height: 8),
           Text(
-            'Your account stores your name, email and profile photo, plus your likes, favorites, playlists, follows and listening history so the service can work across devices. Your session is kept in a secure cookie on this device. SoundBlast does not sell your personal data.',
+            context.l10n.privacyBody,
             style: TextStyle(color: SbColors.muted, fontSize: 15),
           ),
           SizedBox(height: 20),
-          Text('Permissions',
+          Text(context.l10n.permissions,
               style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800)),
           SizedBox(height: 8),
           Text(
-            'The app asks for storage access only when you pick an audio file, artwork or profile photo to upload. Playback continues while the app is in the background so your music is not interrupted.',
+            context.l10n.permissionsBody,
             style: TextStyle(color: SbColors.muted, fontSize: 15),
           ),
           SizedBox(height: 20),
-          Text('Copyright reports',
+          Text(context.l10n.copyrightReports,
               style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800)),
           SizedBox(height: 8),
           Text(
-            'If content on SoundBlast infringes your rights, send a copyright report from the Feedback page (choose the copyright report category). Reports are reviewed by the SoundBlast administrators.',
+            context.l10n.copyrightBody,
             style: TextStyle(color: SbColors.muted, fontSize: 15),
           ),
         ],
@@ -1469,11 +1474,11 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
   Future<void> _submit() async {
     final state = context.read<AppState>();
     if (state.user == null) {
-      showSnack(context, 'Log in to send feedback.');
+      showSnack(context, context.l10n.loginToSendFeedback);
       return;
     }
     if (_message.text.trim().length < 10) {
-      showSnack(context, 'Please write at least 10 characters.');
+      showSnack(context, context.l10n.feedbackMinChars);
       return;
     }
     setState(() => _busy = true);
@@ -1481,7 +1486,7 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
       await state.api.submitFeedback(_message.text.trim(),
           category: _category);
       if (!mounted) return;
-      showSnack(context, 'Thanks — your feedback was sent.');
+      showSnack(context, context.l10n.feedbackSentThanks);
       Navigator.of(context).pop();
     } catch (e) {
       if (mounted) showSnack(context, e.toString());
@@ -1500,46 +1505,46 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
   Widget build(BuildContext context) {
     final state = context.watch<AppState>();
     return Scaffold(
-      appBar: AppBar(title: const Text('Feedback')),
+      appBar: AppBar(title: Text(context.l10n.navFeedback)),
       body: ListView(
         padding: const EdgeInsets.all(24),
         children: [
-          const Text('Tell us what you think',
+          Text(context.l10n.tellUsWhatYouThink,
               style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800)),
           const SizedBox(height: 8),
-          const Text(
-            'Bug reports, ideas, privacy requests and copyright reports all go to the SoundBlast team.',
+          Text(
+            context.l10n.feedbackIntro,
             style: TextStyle(color: SbColors.muted),
           ),
           const SizedBox(height: 20),
           if (state.user == null)
-            const GatedFeature(
-              label: 'Send feedback',
-              reason: 'Log in to send feedback — it is filed under your account.',
+            GatedFeature(
+              label: context.l10n.sendFeedback,
+              reason: context.l10n.loginToSendFeedbackNote,
               icon: Icons.feedback,
             )
           else ...[
             DropdownButtonFormField<String>(
               initialValue: _category,
-              decoration: const InputDecoration(labelText: 'Category'),
-              items: const [
+              decoration: InputDecoration(labelText: context.l10n.category),
+              items: [
                 DropdownMenuItem(
-                    value: 'feedback', child: Text('Feedback')),
+                    value: 'feedback', child: Text(context.l10n.navFeedback)),
                 DropdownMenuItem(
                     value: 'privacy_request',
-                    child: Text('Privacy request')),
+                    child: Text(context.l10n.feedbackPrivacyRequest)),
                 DropdownMenuItem(
                     value: 'copyright_report',
-                    child: Text('Copyright report')),
+                    child: Text(context.l10n.feedbackCopyrightReport)),
               ],
               onChanged: (v) => setState(() => _category = v ?? 'feedback'),
             ),
             const SizedBox(height: 16),
             TextField(
               controller: _message,
-              decoration: const InputDecoration(
-                  labelText: 'Your message',
-                  hintText: 'At least 10 characters, up to 2000.'),
+              decoration: InputDecoration(
+                  labelText: context.l10n.yourMessage,
+                  hintText: context.l10n.messageLengthHint),
               maxLines: 8,
               maxLength: 2000,
             ),
@@ -1553,12 +1558,191 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
                         width: 20,
                         height: 20,
                         child: CircularProgressIndicator(strokeWidth: 2))
-                    : const Text('Send feedback'),
+                    : Text(context.l10n.sendFeedback),
               ),
             ),
           ],
         ],
       ),
+    );
+  }
+}
+
+/// Edit your own artist profile (stage name, bio, photo).
+/// Uses the server's songs.updateProfile — artists only; the server refuses
+/// listeners, so they see an honest note instead of a dead form.
+class EditProfileScreen extends StatefulWidget {
+  const EditProfileScreen({super.key});
+
+  @override
+  State<EditProfileScreen> createState() => _EditProfileScreenState();
+}
+
+class _EditProfileScreenState extends State<EditProfileScreen> {
+  final _stage = TextEditingController();
+  final _bio = TextEditingController();
+  PlatformFile? _image;
+  bool _saving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    final user = context.read<AppState>().user;
+    if (user == null) return;
+    _stage.text = user.displayName;
+    if (user.isArtist) _loadBio(user);
+  }
+
+  Future<void> _loadBio(User user) async {
+    try {
+      final id = int.tryParse(user.id);
+      if (id == null) return;
+      final profile = await context.read<AppState>().api.artistProfile(id);
+      final bio = profile['bio']?.toString() ?? '';
+      if (mounted && bio.isNotEmpty) _bio.text = bio;
+    } catch (_) {}
+  }
+
+  Future<void> _pickImage() async {
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.image,
+      withData: true,
+    );
+    if (result == null || result.files.isEmpty) return;
+    setState(() => _image = result.files.first);
+  }
+
+  Future<void> _save() async {
+    final state = context.read<AppState>();
+    final user = state.user;
+    if (user == null) return;
+    final stageName = _stage.text.trim();
+    if (stageName.isEmpty) {
+      showSnack(context, context.l10n.stageNameRequired);
+      return;
+    }
+    setState(() => _saving = true);
+    try {
+      String? imageUrl;
+      if (_image?.bytes != null) {
+        final upload = await state.api.uploadFile(
+          base64Data: base64Encode(_image!.bytes!),
+          fileName: _image!.name,
+          fileType: 'image/${_image!.extension ?? 'jpeg'}',
+        );
+        imageUrl = upload['url']?.toString();
+      }
+      final result = await state.api.updateArtistProfile(
+        stageName: stageName,
+        bio: _bio.text.trim(),
+        imageUrl: imageUrl,
+      );
+      if (result['success'] == false) {
+        if (mounted) {
+          showSnack(
+              context, result['error']?.toString() ?? 'Failed to save.');
+        }
+        return;
+      }
+      final me = await state.api.me();
+      if (me != null) state.setUser(me);
+      if (!mounted) return;
+      showSnack(context, context.l10n.profileUpdated);
+      Navigator.of(context).pop();
+    } catch (e) {
+      if (mounted) showSnack(context, e.toString());
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+
+  @override
+  void dispose() {
+    _stage.dispose();
+    _bio.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final state = context.watch<AppState>();
+    final user = state.user;
+    return Scaffold(
+      appBar: AppBar(title: Text(context.l10n.editProfile)),
+      body: user == null
+          ? EmptyState(
+              icon: Icons.person_outline,
+              title: context.l10n.guestTitle,
+              message: context.l10n.guestMessage,
+            )
+          : !user.isArtist
+              ? Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: GatedFeature(
+                    label: context.l10n.editProfile,
+                    reason: context.l10n.editProfileArtistsOnly,
+                    icon: Icons.person,
+                  ),
+                )
+              : ListView(
+                  padding: const EdgeInsets.all(20),
+                  children: [
+                    Center(
+                      child: GestureDetector(
+                        onTap: _pickImage,
+                        child: CircleAvatar(
+                          radius: 48,
+                          backgroundColor: SbColors.surface2,
+                          backgroundImage: _image?.bytes == null &&
+                                  user.imageUrl != null
+                              ? NetworkImage(user.imageUrl!)
+                              : null,
+                          child: _image?.bytes != null
+                              ? ClipOval(
+                                  child: Image.memory(
+                                    _image!.bytes!,
+                                    width: 96,
+                                    height: 96,
+                                    fit: BoxFit.cover,
+                                  ),
+                                )
+                              : user.imageUrl == null
+                                  ? const Icon(Icons.person,
+                                      size: 48, color: SbColors.muted)
+                                  : null,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Center(
+                      child: TextButton.icon(
+                        onPressed: _pickImage,
+                        icon: const Icon(Icons.photo_camera),
+                        label: Text(context.l10n.changePhoto),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    TextField(
+                      controller: _stage,
+                      decoration: InputDecoration(
+                          labelText: context.l10n.stageName),
+                    ),
+                    const SizedBox(height: 16),
+                    TextField(
+                      controller: _bio,
+                      decoration:
+                          InputDecoration(labelText: context.l10n.bio),
+                      maxLines: 4,
+                    ),
+                    const SizedBox(height: 24),
+                    ElevatedButton(
+                      onPressed: _saving ? null : _save,
+                      child: Text(_saving
+                          ? context.l10n.saving
+                          : context.l10n.save),
+                    ),
+                  ],
+                ),
     );
   }
 }

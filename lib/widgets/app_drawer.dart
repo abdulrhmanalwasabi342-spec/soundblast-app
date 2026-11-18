@@ -223,7 +223,7 @@ class AppDrawer extends StatelessWidget {
       ),
       trailing: IconButton(
         icon: const Icon(Icons.logout, size: 20, color: Colors.redAccent),
-        tooltip: 'Log out',
+        tooltip: context.l10n.logout,
         onPressed: () async {
           final navigator = Navigator.of(context);
           navigator.pop();

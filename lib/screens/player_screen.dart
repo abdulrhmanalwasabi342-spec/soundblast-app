@@ -127,7 +127,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
                           [
                             song.genre,
                             if (song.playCount > 0)
-                              formatPlays(song.playCount),
+                              context.l10n.playsCount(formatCount(song.playCount)),
                             if (song.likeCount > 0)
                               context.l10n.likesCount(formatCount(song.likeCount)),
                           ].join(' • '),

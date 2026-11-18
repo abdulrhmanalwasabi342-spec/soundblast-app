@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -300,29 +302,20 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       child: Stack(
         children: [
-          Positioned(
+          _DriftingBlob(
             left: -60,
             top: -40,
-            child: Container(
-              width: 220,
-              height: 220,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: SbColors.accent.withOpacity(0.20),
-              ),
-            ),
+            size: 220,
+            color: SbColors.accent,
+            duration: const Duration(seconds: 18),
           ),
-          Positioned(
+          _DriftingBlob(
             right: -50,
             bottom: -60,
-            child: Container(
-              width: 200,
-              height: 200,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: SbColors.purpleDeep.withOpacity(0.20),
-              ),
-            ),
+            size: 200,
+            color: SbColors.purpleDeep,
+            duration: const Duration(seconds: 20),
+            phase: 0.4,
           ),
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -1245,6 +1238,82 @@ class _TrendingScreenState extends State<TrendingScreen> {
                         ],
                       ),
                     ),
+    );
+  }
+}
+
+/// One of the website hero's drifting glow blobs (ClassicHomeHero animates
+/// the pink blob on an 18s loop and the purple blob on a 20s loop, drifting
+/// a few dozen pixels with a slow opacity swell). Pure sine drift — the same
+/// living feel, without the performance film, which needs storage that is
+/// not configured yet.
+class _DriftingBlob extends StatefulWidget {
+  final double? left;
+  final double? top;
+  final double? right;
+  final double? bottom;
+  final double size;
+  final Color color;
+  final Duration duration;
+  final double phase;
+
+  const _DriftingBlob({
+    this.left,
+    this.top,
+    this.right,
+    this.bottom,
+    required this.size,
+    required this.color,
+    required this.duration,
+    this.phase = 0,
+  });
+
+  @override
+  State<_DriftingBlob> createState() => _DriftingBlobState();
+}
+
+class _DriftingBlobState extends State<_DriftingBlob>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(vsync: this, duration: widget.duration)
+      ..value = widget.phase
+      ..repeat();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, child) {
+        final t = _controller.value * 2 * math.pi;
+        final dx = math.sin(t) * 28;
+        final dy = math.sin(t * 1.3 + 1.2) * 21;
+        final opacity = 0.15 + 0.07 * (0.5 + 0.5 * math.sin(t * 0.7));
+        return Positioned(
+          left: widget.left == null ? null : widget.left! + dx,
+          top: widget.top == null ? null : widget.top! + dy,
+          right: widget.right == null ? null : widget.right! - dx,
+          bottom: widget.bottom == null ? null : widget.bottom! - dy,
+          child: Container(
+            width: widget.size,
+            height: widget.size,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: widget.color.withValues(alpha: opacity),
+            ),
+          ),
+        );
+      },
     );
   }
 }

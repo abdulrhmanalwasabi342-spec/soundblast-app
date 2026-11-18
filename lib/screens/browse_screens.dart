@@ -663,11 +663,14 @@ class _ArtistPageScreenState extends State<ArtistPageScreen> {
   Future<void> _toggleFollow() async {
     final state = context.read<AppState>();
     if (state.user == null) {
-      showSnack(context, 'Log in to follow artists.');
+      showSnack(context, context.l10n.loginToFollow);
       return;
     }
     final id = _profile?.localUserId;
     if (id == null) return;
+    // Never follow yourself: the server refuses it, and the button is hidden
+    // on your own page — this is defense in depth.
+    if (id.toString() == state.user!.id) return;
     try {
       if (_following) {
         await state.api.unfollowArtist(id);
@@ -690,6 +693,8 @@ class _ArtistPageScreenState extends State<ArtistPageScreen> {
   @override
   Widget build(BuildContext context) {
     final state = context.watch<AppState>();
+    final isOwnProfile =
+        _profile?.localUserId.toString() == state.user?.id;
     return Scaffold(
       appBar: AppBar(title: Text(_profile?.stageName ?? widget.handle)),
       body: _loading
@@ -735,7 +740,10 @@ class _ArtistPageScreenState extends State<ArtistPageScreen> {
                                 ),
                                 const SizedBox(height: 4),
                                 Text(
-                                  '$_followerCount followers • ${_songs.length} songs • ${_songs.fold(0, (a, s) => a + s.playCount)} plays',
+                                  context.l10n.artistStats(
+                                      '$_followerCount',
+                                      '${_songs.length}',
+                                      '${_songs.fold(0, (a, s) => a + s.playCount)}'),
                                   style: const TextStyle(
                                       color: SbColors.muted),
                                 ),
@@ -761,16 +769,17 @@ class _ArtistPageScreenState extends State<ArtistPageScreen> {
                                         label: Text(context.l10n.play),
                                       ),
                                     ),
-                                    const SizedBox(width: 12),
-                                    Expanded(
-                                      child: OutlinedButton.icon(
-                                        onPressed: _toggleFollow,
-                                        icon: Icon(_following
-                                            ? Icons.check
-                                            : Icons.person_add),
-                                        label: Text(_following
-                                            ? 'Following'
-                                            : 'Follow'),
+                                    if (!isOwnProfile) ...[
+                                      const SizedBox(width: 12),
+                                      Expanded(
+                                        child: OutlinedButton.icon(
+                                          onPressed: _toggleFollow,
+                                          icon: Icon(_following
+                                              ? Icons.check
+                                              : Icons.person_add),
+                                          label: Text(_following
+                                              ? context.l10n.following
+                                              : context.l10n.follow),
                                         style: OutlinedButton.styleFrom(
                                           foregroundColor: SbColors.text,
                                           side: const BorderSide(
@@ -781,6 +790,7 @@ class _ArtistPageScreenState extends State<ArtistPageScreen> {
                                         ),
                                       ),
                                     ),
+                                    ],
                                   ],
                                 ),
                               ],
@@ -788,12 +798,12 @@ class _ArtistPageScreenState extends State<ArtistPageScreen> {
                           ),
                           SectionHeader(title: context.l10n.songs),
                           if (_songs.isEmpty)
-                            const Padding(
-                              padding: EdgeInsets.all(16),
+                            Padding(
+                              padding: const EdgeInsets.all(16),
                               child: Text(
-                                'No public songs from this artist yet.',
-                                style:
-                                    TextStyle(color: SbColors.muted),
+                                context.l10n.noPublicSongsArtist,
+                                style: const TextStyle(
+                                    color: SbColors.muted),
                               ),
                             )
                           else

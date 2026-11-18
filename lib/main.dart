@@ -168,6 +168,10 @@ class SoundBlastApp extends StatelessWidget {
           );
         case 'player':
           page = const PlayerScreen();
+        case 'profile':
+          page = segments[1] == 'edit'
+              ? const EditProfileScreen()
+              : const NotFoundScreen();
         default:
           page = const NotFoundScreen();
       }
@@ -366,12 +370,12 @@ class NotFoundScreen extends StatelessWidget {
       appBar: AppBar(title: const Text('SoundBlast')),
       body: EmptyState(
         icon: Icons.search_off,
-        title: 'Page not found',
-        message: 'This page does not exist on SoundBlast.',
+        title: context.l10n.pageNotFound,
+        message: context.l10n.pageNotFoundBody,
         action: ElevatedButton(
           onPressed: () => Navigator.of(context)
               .pushNamedAndRemoveUntil('/', (_) => false),
-          child: const Text('Go home'),
+          child: Text(context.l10n.goHome),
         ),
       ),
     );

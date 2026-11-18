@@ -176,7 +176,7 @@ class _AdminScreenState extends State<AdminScreen>
     final user = state.user;
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Admin'),
+        title: Text(context.l10n.admin),
         bottom: user?.isAdmin == true
             ? TabBar(
                 controller: _tab,
@@ -184,14 +184,14 @@ class _AdminScreenState extends State<AdminScreen>
                 labelColor: SbColors.text,
                 unselectedLabelColor: SbColors.muted,
                 isScrollable: true,
-                tabs: const [
-                  Tab(text: 'Overview'),
-                  Tab(text: 'Users'),
-                  Tab(text: 'Content'),
-                  Tab(text: 'Artists'),
-                  Tab(text: 'Home & platform'),
-                  Tab(text: 'Analytics'),
-                  Tab(text: 'System & safety'),
+                tabs: [
+                  Tab(text: context.l10n.adminTabOverview),
+                  Tab(text: context.l10n.adminTabUsers),
+                  Tab(text: context.l10n.adminTabContent),
+                  Tab(text: context.l10n.adminTabArtists),
+                  Tab(text: context.l10n.adminTabHomePlatform),
+                  Tab(text: context.l10n.adminTabAnalytics),
+                  Tab(text: context.l10n.adminTabSystemSafety),
                 ],
               )
             : null,
@@ -199,11 +199,11 @@ class _AdminScreenState extends State<AdminScreen>
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : user == null || !user.isAdmin
-              ? const EmptyState(
+              ? EmptyState(
                   icon: Icons.admin_panel_settings_outlined,
-                  title: 'Admins only',
+                  title: context.l10n.adminsOnly,
                   message:
-                      'This area is restricted to SoundBlast administrators.',
+                      context.l10n.adminRestricted,
                 )
               : _error != null
                   ? ErrorView(message: _error!, onRetry: _load)
@@ -259,7 +259,7 @@ class _AdminScreenState extends State<AdminScreen>
             Text(message),
             const SizedBox(height: 12),
             Text(
-              'Type "$confirmWord" to confirm.',
+              context.l10n.typeToConfirm(confirmWord),
               style: const TextStyle(
                   color: SbColors.danger, fontWeight: FontWeight.w700),
             ),
@@ -270,18 +270,32 @@ class _AdminScreenState extends State<AdminScreen>
         actions: [
           TextButton(
               onPressed: () => Navigator.of(ctx).pop(false),
-              child: const Text('Cancel')),
+              child: Text(context.l10n.cancel)),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
                 backgroundColor: SbColors.danger),
             onPressed: () => Navigator.of(ctx)
                 .pop(controller.text.trim() == confirmWord),
-            child: const Text('Confirm'),
+            child: Text(context.l10n.confirm),
           ),
         ],
       ),
     );
     return ok == true;
+  }
+
+  /// Human label for a library-integrity row key (the server returns raw
+  /// keys like `emptyPlaylists`); unknown keys fall back to the raw key.
+  String _integrityLabel(String key) {
+    final l10n = context.l10n;
+    return switch (key) {
+      'emptyPlaylists' => l10n.integrityEmptyPlaylists,
+      'removableEmptyPlaylists' => l10n.integrityRemovableEmptyPlaylists,
+      'orphanPlaylistSongs' => l10n.integrityOrphanPlaylistSongs,
+      'songsMissingSize' => l10n.integritySongsMissingSize,
+      'rawPlayEvents' => l10n.integrityRawPlayEvents,
+      _ => key,
+    };
   }
 
   // ---- Overview -------------------------------------------------------------
@@ -298,10 +312,10 @@ class _AdminScreenState extends State<AdminScreen>
                       style: const TextStyle(fontWeight: FontWeight.w700)),
                 )),
           const SizedBox(height: 8),
-          const Text('Owner',
+          Text(context.l10n.ownerLabel,
               style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
-          const Text(
-            'The owner account (ADMIN_EMAIL) can never be demoted, suspended or deleted by another admin, and only the owner can grant admin to others.',
+          Text(
+            context.l10n.ownerNote,
             style: TextStyle(color: SbColors.muted, fontSize: 13),
           ),
         ],
@@ -322,14 +336,14 @@ class _AdminScreenState extends State<AdminScreen>
               child: ElevatedButton.icon(
                 onPressed: () => _showCreateUser(context),
                 icon: const Icon(Icons.person_add),
-                label: const Text('Create user'),
+                label: Text(context.l10n.createUser),
               ),
             ),
           ),
           if (_users.isEmpty)
-            const Padding(
+            Padding(
               padding: EdgeInsets.all(16),
-              child: Text('No users yet.',
+              child: Text(context.l10n.noUsersYet,
                   style: TextStyle(color: SbColors.muted)),
             )
           else
@@ -346,7 +360,7 @@ class _AdminScreenState extends State<AdminScreen>
                       color: SbColors.muted),
                 ),
                 title: Text(
-                    '${m['name'] ?? m['stageName'] ?? 'User'}${isAdmin ? ' · admin' : ''}'),
+                    '${m['name'] ?? m['stageName'] ?? context.l10n.userLabel}${isAdmin ? ' · ${context.l10n.adminShort}' : ''}'),
                 subtitle: Text(
                     '${m['email'] ?? ''} • ${m['role'] ?? 'user'} • ${m['status'] ?? 'active'}'),
                 trailing: PopupMenuButton<String>(
@@ -365,18 +379,18 @@ class _AdminScreenState extends State<AdminScreen>
                       _showEditUser(context, id, m);
                     } else if (v == 'delete') {
                       final ok = await confirmDialog(context,
-                          title: 'Delete user',
+                          title: context.l10n.deleteUser,
                           message:
-                              'Delete this account permanently? The owner account can never be deleted.');
+                              context.l10n.deleteUserConfirm);
                       if (ok) {
                         await _run(
                             () => _api.adminDeleteLocalUser(id));
                       }
                     } else if (v == 'notify') {
                       await _run(() => _api.adminSendNotification(
-                          id, 'A message from SoundBlast'));
+                          id, context.l10n.adminDefaultNotification));
                       if (mounted) {
-                        showSnack(context, 'Notification sent.');
+                        showSnack(context, context.l10n.notificationSent);
                       }
                     } else if (v == 'clear_favs') {
                       await _run(
@@ -387,24 +401,24 @@ class _AdminScreenState extends State<AdminScreen>
                     PopupMenuItem(
                         value: isAdmin ? 'revoke_admin' : 'grant_admin',
                         child: Text(isAdmin
-                            ? 'Revoke admin (owner only)'
-                            : 'Grant admin (owner only)')),
+                            ? context.l10n.revokeAdminOwner
+                            : context.l10n.grantAdminOwner)),
                     PopupMenuItem(
                         value: suspended ? 'activate' : 'suspend',
                         child: Text(
-                            suspended ? 'Activate account' : 'Suspend account')),
-                    const PopupMenuItem(
+                            suspended ? context.l10n.activateAccount : context.l10n.suspendAccount)),
+                    PopupMenuItem(
                         value: 'reset_password',
-                        child: Text('Reset password')),
-                    const PopupMenuItem(
-                        value: 'edit', child: Text('Edit profile')),
-                    const PopupMenuItem(
-                        value: 'notify', child: Text('Send notification')),
-                    const PopupMenuItem(
+                        child: Text(context.l10n.resetPasswordAction)),
+                    PopupMenuItem(
+                        value: 'edit', child: Text(context.l10n.editProfile)),
+                    PopupMenuItem(
+                        value: 'notify', child: Text(context.l10n.sendNotification)),
+                    PopupMenuItem(
                         value: 'clear_favs',
-                        child: Text('Clear favorites [NEW]')),
-                    const PopupMenuItem(
-                        value: 'delete', child: Text('Delete account')),
+                        child: Text(context.l10n.clearFavorites)),
+                    PopupMenuItem(
+                        value: 'delete', child: Text(context.l10n.deleteAccount)),
                   ],
                 ),
               );
@@ -425,7 +439,7 @@ class _AdminScreenState extends State<AdminScreen>
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setState) => AlertDialog(
           backgroundColor: SbColors.surface,
-          title: const Text('Create user'),
+          title: Text(context.l10n.createUser),
           content: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -433,41 +447,41 @@ class _AdminScreenState extends State<AdminScreen>
                 TextField(
                     controller: name,
                     decoration:
-                        const InputDecoration(labelText: 'Name')),
+                        InputDecoration(labelText: context.l10n.fieldName)),
                 TextField(
                     controller: email,
                     decoration:
-                        const InputDecoration(labelText: 'Email')),
+                        InputDecoration(labelText: context.l10n.authEmail)),
                 TextField(
                     controller: password,
                     obscureText: true,
-                    decoration: const InputDecoration(
-                        labelText: 'Password (min 8)')),
+                    decoration: InputDecoration(
+                        labelText: context.l10n.passwordMin8)),
                 const SizedBox(height: 8),
                 DropdownButton<String>(
                   value: role,
-                  items: const [
+                  items: [
                     DropdownMenuItem(
-                        value: 'user', child: Text('Listener')),
+                        value: 'user', child: Text(context.l10n.roleListener)),
                     DropdownMenuItem(
-                        value: 'artist', child: Text('Artist')),
+                        value: 'artist', child: Text(context.l10n.roleArtist)),
                   ],
                   onChanged: (v) => setState(() => role = v ?? 'user'),
                 ),
                 TextField(
                     controller: stage,
-                    decoration: const InputDecoration(
-                        labelText: 'Stage name (artists)')),
+                    decoration: InputDecoration(
+                        labelText: context.l10n.stageNameArtists)),
               ],
             ),
           ),
           actions: [
             TextButton(
                 onPressed: () => Navigator.of(ctx).pop(false),
-                child: const Text('Cancel')),
+                child: Text(context.l10n.cancel)),
             ElevatedButton(
                 onPressed: () => Navigator.of(ctx).pop(true),
-                child: const Text('Create')),
+                child: Text(context.l10n.createButton)),
           ],
         ),
       ),
@@ -492,20 +506,20 @@ class _AdminScreenState extends State<AdminScreen>
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: SbColors.surface,
-        title: Text('Reset password — $name'),
+        title: Text(context.l10n.resetPasswordFor(name)),
         content: TextField(
           controller: password,
           obscureText: true,
           decoration:
-              const InputDecoration(labelText: 'New password (min 8)'),
+              InputDecoration(labelText: context.l10n.newPasswordMin8),
         ),
         actions: [
           TextButton(
               onPressed: () => Navigator.of(ctx).pop(false),
-              child: const Text('Cancel')),
+              child: Text(context.l10n.cancel)),
           ElevatedButton(
               onPressed: () => Navigator.of(ctx).pop(true),
-              child: const Text('Reset')),
+              child: Text(context.l10n.resetButton)),
         ],
       ),
     );
@@ -523,21 +537,21 @@ class _AdminScreenState extends State<AdminScreen>
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: SbColors.surface,
-        title: const Text('Edit user'),
+        title: Text(context.l10n.editUser),
         content: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               TextField(
                   controller: name,
-                  decoration: const InputDecoration(labelText: 'Name')),
+                  decoration: InputDecoration(labelText: context.l10n.fieldName)),
               TextField(
                   controller: stage,
                   decoration:
-                      const InputDecoration(labelText: 'Stage name')),
+                      InputDecoration(labelText: context.l10n.authStageName)),
               TextField(
                   controller: bio,
-                  decoration: const InputDecoration(labelText: 'Bio'),
+                  decoration: InputDecoration(labelText: context.l10n.bioLabel),
                   maxLines: 3),
             ],
           ),
@@ -545,10 +559,10 @@ class _AdminScreenState extends State<AdminScreen>
         actions: [
           TextButton(
               onPressed: () => Navigator.of(ctx).pop(false),
-              child: const Text('Cancel')),
+              child: Text(context.l10n.cancel)),
           ElevatedButton(
               onPressed: () => Navigator.of(ctx).pop(true),
-              child: const Text('Save')),
+              child: Text(context.l10n.save)),
         ],
       ),
     );
@@ -568,12 +582,12 @@ class _AdminScreenState extends State<AdminScreen>
       child: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          const Text('Songs',
+          Text(context.l10n.songs,
               style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
           if (_songs.isEmpty)
-            const Padding(
+            Padding(
               padding: EdgeInsets.symmetric(vertical: 8),
-              child: Text('No songs yet.',
+              child: Text(context.l10n.noSongsYet,
                   style: TextStyle(color: SbColors.muted)),
             )
           else
@@ -585,7 +599,7 @@ class _AdminScreenState extends State<AdminScreen>
                 leading: CoverImage(url: m['imageUrl']?.toString(), size: 44),
                 title: Text('${m['title'] ?? ''}'),
                 subtitle: Text(
-                    '${m['artist'] ?? ''} • ${m['genre'] ?? ''} • ${isPublic ? 'public' : 'hidden'}'),
+                    '${m['artist'] ?? ''} • ${m['genre'] ?? ''} • ${isPublic ? context.l10n.songVisibilityPublic : context.l10n.songVisibilityHidden}'),
                 trailing: PopupMenuButton<String>(
                   onSelected: (v) async {
                     if (v == 'hide' || v == 'publish') {
@@ -593,16 +607,15 @@ class _AdminScreenState extends State<AdminScreen>
                           id, v == 'publish'));
                     } else if (v == 'delete') {
                       final ok = await confirmDialog(context,
-                          title: 'Delete song',
-                          message: 'Delete "${m['title']}" permanently?');
+                          title: context.l10n.deleteSong,
+                          message: context.l10n.deleteSongConfirm('${m['title']}'),);
                       if (ok) {
                         await _run(() => _api.adminDeleteSong(id));
                       }
                     } else if (v == 'delete_comments') {
                       final ok = await confirmDialog(context,
-                          title: 'Delete comments',
-                          message:
-                              'Delete all comments on "${m['title']}"?');
+                          title: context.l10n.deleteComments,
+                          message: context.l10n.deleteAllCommentsOn('${m['title']}'));
                       if (ok) {
                         await _run(
                             () => _api.adminDeleteCommentsBySong(id));
@@ -613,23 +626,23 @@ class _AdminScreenState extends State<AdminScreen>
                     PopupMenuItem(
                         value: isPublic ? 'hide' : 'publish',
                         child:
-                            Text(isPublic ? 'Hide (unpublish)' : 'Publish')),
-                    const PopupMenuItem(
+                            Text(isPublic ? context.l10n.hideUnpublish : context.l10n.publishButton)),
+                    PopupMenuItem(
                         value: 'delete_comments',
-                        child: Text('Delete all its comments')),
-                    const PopupMenuItem(
-                        value: 'delete', child: Text('Delete song')),
+                        child: Text(context.l10n.deleteAllItsComments)),
+                    PopupMenuItem(
+                        value: 'delete', child: Text(context.l10n.deleteSong)),
                   ],
                 ),
               );
             }),
           const SizedBox(height: 16),
-          const Text('Releases (albums)',
+          Text(context.l10n.releasesAlbums,
               style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
           if (_releases.isEmpty)
-            const Padding(
+            Padding(
               padding: EdgeInsets.symmetric(vertical: 8),
-              child: Text('No releases yet.',
+              child: Text(context.l10n.noReleasesYet,
                   style: TextStyle(color: SbColors.muted)),
             )
           else
@@ -645,8 +658,8 @@ class _AdminScreenState extends State<AdminScreen>
                       color: SbColors.danger),
                   onPressed: () async {
                     final ok = await confirmDialog(context,
-                        title: 'Delete release',
-                        message: 'Delete this release permanently?');
+                        title: context.l10n.deleteRelease,
+                        message: context.l10n.deleteReleaseConfirm);
                     if (ok) {
                       await _run(() => _api.adminDeleteRelease(id));
                     }
@@ -655,12 +668,12 @@ class _AdminScreenState extends State<AdminScreen>
               );
             }),
           const SizedBox(height: 16),
-          const Text('Playlists',
+          Text(context.l10n.navPlaylists,
               style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
           if (_playlists.isEmpty)
-            const Padding(
+            Padding(
               padding: EdgeInsets.symmetric(vertical: 8),
-              child: Text('No playlists yet.',
+              child: Text(context.l10n.noPlaylists,
                   style: TextStyle(color: SbColors.muted)),
             )
           else
@@ -675,8 +688,8 @@ class _AdminScreenState extends State<AdminScreen>
                       color: SbColors.danger),
                   onPressed: () async {
                     final ok = await confirmDialog(context,
-                        title: 'Delete playlist',
-                        message: 'Delete this playlist permanently?');
+                        title: context.l10n.deletePlaylist,
+                        message: context.l10n.deletePlaylistConfirmPerm);
                     if (ok) {
                       await _run(
                           () => _api.adminDeletePlaylist(id));
@@ -686,12 +699,12 @@ class _AdminScreenState extends State<AdminScreen>
               );
             }),
           const SizedBox(height: 16),
-          const Text('Comments moderation',
+          Text(context.l10n.commentsModeration,
               style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
           if (_comments.isEmpty)
-            const Padding(
+            Padding(
               padding: EdgeInsets.symmetric(vertical: 8),
-              child: Text('No comments yet.',
+              child: Text(context.l10n.noCommentsYet,
                   style: TextStyle(color: SbColors.muted)),
             )
           else
@@ -700,7 +713,7 @@ class _AdminScreenState extends State<AdminScreen>
               final id = _id(m);
               return ListTile(
                 title: Text('${m['text'] ?? ''}'),
-                subtitle: Text('${m['userName'] ?? 'Listener'}'),
+                subtitle: Text('${m['userName'] ?? context.l10n.roleListener}'),
                 trailing: IconButton(
                   icon: const Icon(Icons.delete_outline,
                       color: SbColors.danger),
@@ -712,12 +725,12 @@ class _AdminScreenState extends State<AdminScreen>
               );
             }),
           const SizedBox(height: 16),
-          const Text('Artist posts',
+          Text(context.l10n.navArtistPosts,
               style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
           if (_artistPosts.isEmpty)
-            const Padding(
+            Padding(
               padding: EdgeInsets.symmetric(vertical: 8),
-              child: Text('No artist posts yet.',
+              child: Text(context.l10n.noArtistPostsYet,
                   style: TextStyle(color: SbColors.muted)),
             )
           else
@@ -744,16 +757,16 @@ class _AdminScreenState extends State<AdminScreen>
                           _api.adminClearArtistPostEngagement(id));
                     }
                   },
-                  itemBuilder: (_) => const [
+                  itemBuilder: (_) => [
                     PopupMenuItem(
-                        value: 'archive', child: Text('Archive')),
+                        value: 'archive', child: Text(context.l10n.archive)),
                     PopupMenuItem(
-                        value: 'restore', child: Text('Restore')),
+                        value: 'restore', child: Text(context.l10n.restore)),
                     PopupMenuItem(
                         value: 'clear_engagement',
-                        child: Text('Clear engagement')),
+                        child: Text(context.l10n.clearEngagement)),
                     PopupMenuItem(
-                        value: 'delete', child: Text('Delete post')),
+                        value: 'delete', child: Text(context.l10n.deletePost)),
                   ],
                 ),
               );
@@ -770,16 +783,16 @@ class _AdminScreenState extends State<AdminScreen>
       child: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          const Text('Artist activation cases',
+          Text(context.l10n.artistActivationCases,
               style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
-          const Text(
-            'Artist accounts that have not completed activation.',
+          Text(
+            context.l10n.activationCasesHint,
             style: TextStyle(color: SbColors.muted, fontSize: 13),
           ),
           if (_activationCases.isEmpty)
-            const Padding(
+            Padding(
               padding: EdgeInsets.symmetric(vertical: 8),
-              child: Text('No pending activation cases.',
+              child: Text(context.l10n.noPendingActivation,
                   style: TextStyle(color: SbColors.muted)),
             )
           else
@@ -793,7 +806,7 @@ class _AdminScreenState extends State<AdminScreen>
                 trailing: IconButton(
                   icon: const Icon(Icons.verified,
                       color: SbColors.accent),
-                  tooltip: 'Mark verified',
+                  tooltip: context.l10n.markVerified,
                   onPressed: () async {
                     await _run(
                         () => _api.adminSetVerified(id, true));
@@ -802,12 +815,12 @@ class _AdminScreenState extends State<AdminScreen>
               );
             }),
           const SizedBox(height: 16),
-          const Text('All artists',
+          Text(context.l10n.allArtists,
               style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
           if (_artists.isEmpty)
-            const Padding(
+            Padding(
               padding: EdgeInsets.symmetric(vertical: 8),
-              child: Text('No artists yet.',
+              child: Text(context.l10n.noArtists,
                   style: TextStyle(color: SbColors.muted)),
             )
           else
@@ -818,7 +831,7 @@ class _AdminScreenState extends State<AdminScreen>
               return ListTile(
                 leading: const Icon(Icons.mic),
                 title: Text('${m['stageName'] ?? ''}'),
-                subtitle: Text(verified ? 'Verified' : 'Not verified'),
+                subtitle: Text(verified ? context.l10n.verified : context.l10n.notVerified),
                 trailing: PopupMenuButton<String>(
                   onSelected: (v) async {
                     if (v == 'verify' || v == 'unverify') {
@@ -837,15 +850,14 @@ class _AdminScreenState extends State<AdminScreen>
                           context: context,
                           builder: (ctx) => AlertDialog(
                             backgroundColor: SbColors.surface,
-                            title: Text(
-                                'Songs by ${m['stageName'] ?? ''}'),
+                            title: Text(context.l10n.songsBy('${m['stageName'] ?? ''}')),
                             content: SizedBox(
                               width: double.maxFinite,
                               child: ListView(
                                 shrinkWrap: true,
                                 children: songs.isEmpty
                                     ? [
-                                        const Text('No songs.',
+                                        Text(context.l10n.noSongsShort,
                                             style: TextStyle(
                                                 color: SbColors.muted))
                                       ]
@@ -862,7 +874,7 @@ class _AdminScreenState extends State<AdminScreen>
                               TextButton(
                                   onPressed: () =>
                                       Navigator.of(ctx).pop(),
-                                  child: const Text('Close')),
+                                  child: Text(context.l10n.close)),
                             ],
                           ),
                         );
@@ -873,16 +885,16 @@ class _AdminScreenState extends State<AdminScreen>
                     PopupMenuItem(
                         value: verified ? 'unverify' : 'verify',
                         child: Text(verified
-                            ? 'Remove verified badge'
-                            : 'Mark verified')),
-                    const PopupMenuItem(
+                            ? context.l10n.removeVerifiedBadge
+                            : context.l10n.markVerified)),
+                    PopupMenuItem(
                         value: 'suspend',
-                        child: Text('Suspend artist [NEW]')),
-                    const PopupMenuItem(
+                        child: Text(context.l10n.suspendArtist)),
+                    PopupMenuItem(
                         value: 'activate',
-                        child: Text('Activate artist')),
-                    const PopupMenuItem(
-                        value: 'songs', child: Text('View songs')),
+                        child: Text(context.l10n.activateArtist)),
+                    PopupMenuItem(
+                        value: 'songs', child: Text(context.l10n.viewSongs)),
                   ],
                 ),
               );
@@ -899,10 +911,10 @@ class _AdminScreenState extends State<AdminScreen>
       child: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          const Text('Home hero action order',
+          Text(context.l10n.homeHeroActionOrder,
               style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
-          const Text(
-            'Controls which action the Home hero button offers first.',
+          Text(
+            context.l10n.heroActionOrderHint,
             style: TextStyle(color: SbColors.muted, fontSize: 13),
           ),
           const SizedBox(height: 8),
@@ -911,25 +923,25 @@ class _AdminScreenState extends State<AdminScreen>
             children: List.generate(
                 3,
                 (i) => ChoiceChip(
-                      label: Text('Preset $i'),
+                      label: Text(context.l10n.presetNumber(i)),
                       selected: false,
                       onSelected: (_) async {
                         await _run(() =>
                             _api.adminSetHeroActionOrder(i));
                         if (mounted) {
                           showSnack(context,
-                              'Hero action order set to preset $i.');
+                              context.l10n.heroActionOrderSet(i));
                         }
                       },
                     )),
           ),
           const SizedBox(height: 24),
-          const Text('Feedback inbox',
+          Text(context.l10n.feedbackInbox,
               style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
           if (_feedback.isEmpty)
-            const Padding(
+            Padding(
               padding: EdgeInsets.symmetric(vertical: 8),
-              child: Text('No feedback yet.',
+              child: Text(context.l10n.noFeedbackYet,
                   style: TextStyle(color: SbColors.muted)),
             )
           else
@@ -951,20 +963,20 @@ class _AdminScreenState extends State<AdminScreen>
                           () => _api.adminDeleteFeedback(id));
                     }
                   },
-                  itemBuilder: (_) => const [
+                  itemBuilder: (_) => [
                     PopupMenuItem(
-                        value: 'reviewed', child: Text('Mark reviewed')),
-                    PopupMenuItem(value: 'closed', child: Text('Close')),
-                    PopupMenuItem(value: 'delete', child: Text('Delete')),
+                        value: 'reviewed', child: Text(context.l10n.markReviewed)),
+                    PopupMenuItem(value: 'closed', child: Text(context.l10n.close)),
+                    PopupMenuItem(value: 'delete', child: Text(context.l10n.delete)),
                   ],
                 ),
               );
             }),
           const SizedBox(height: 24),
-          const GatedFeature(
-            label: 'Contact messages inbox [NEW]',
+          GatedFeature(
+            label: context.l10n.contactMessagesInbox,
             reason:
-                'The website has no contact-messages inbox endpoint yet — contact currently goes through Feedback. Listed as a named gap in README.md.',
+                context.l10n.contactInboxGap,
             icon: Icons.mail_outline,
           ),
         ],
@@ -979,21 +991,21 @@ class _AdminScreenState extends State<AdminScreen>
       child: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          const Text('Library integrity',
+          Text(context.l10n.libraryIntegrity,
               style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
           if (_integrity != null)
             ..._integrity!.entries.map((e) => ListTile(
-                  title: Text(e.key),
+                  title: Text(_integrityLabel(e.key)),
                   trailing: Text('${e.value}',
                       style: const TextStyle(fontWeight: FontWeight.w700)),
                 )),
           const SizedBox(height: 16),
-          const Text('Play history (visitors)',
+          Text(context.l10n.playHistoryVisitors,
               style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
           if (_visitors.isEmpty)
-            const Padding(
+            Padding(
               padding: EdgeInsets.symmetric(vertical: 8),
-              child: Text('No visitor history yet.',
+              child: Text(context.l10n.noVisitorHistory,
                   style: TextStyle(color: SbColors.muted)),
             )
           else
@@ -1013,10 +1025,10 @@ class _AdminScreenState extends State<AdminScreen>
                     await _run(
                         () => _api.adminResetVisitorCounter());
                     if (mounted) {
-                      showSnack(context, 'Visitor counter reset.');
+                      showSnack(context, context.l10n.visitorCounterReset);
                     }
                   },
-                  child: const Text('Reset visitor counter'),
+                  child: Text(context.l10n.resetVisitorCounter),
                 ),
               ),
               const SizedBox(width: 8),
@@ -1024,26 +1036,25 @@ class _AdminScreenState extends State<AdminScreen>
                 child: OutlinedButton(
                   onPressed: () async {
                     final ok = await confirmDialog(context,
-                        title: 'Clear visitor history',
-                        message:
-                            'Delete all recorded visitor history?');
+                        title: context.l10n.clearVisitorHistory,
+                        message: context.l10n.deleteVisitorHistoryConfirm);
                     if (ok) {
                       await _run(
                           () => _api.adminClearVisitorHistory());
                     }
                   },
-                  child: const Text('Clear history'),
+                  child: Text(context.l10n.clearHistory),
                 ),
               ),
             ],
           ),
           const SizedBox(height: 16),
-          const Text('Push notifications sent',
+          Text(context.l10n.pushNotificationsSent,
               style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
           if (_notifications.isEmpty)
-            const Padding(
+            Padding(
               padding: EdgeInsets.symmetric(vertical: 8),
-              child: Text('No notifications recorded yet.',
+              child: Text(context.l10n.noNotificationsRecorded,
                   style: TextStyle(color: SbColors.muted)),
             )
           else
@@ -1075,7 +1086,7 @@ class _AdminScreenState extends State<AdminScreen>
       child: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          const Text('Library maintenance',
+          Text(context.l10n.libraryMaintenance,
               style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
           const SizedBox(height: 8),
           Wrap(
@@ -1087,50 +1098,50 @@ class _AdminScreenState extends State<AdminScreen>
                   final res =
                       await _api.adminCleanupLibraryIntegrity();
                   if (mounted) {
-                    showSnack(context, 'Library cleanup done: $res');
+                    showSnack(context, context.l10n.libraryCleanupDone('$res'));
                   }
                   await _loadTab(5);
                 },
-                child: const Text('Clean library integrity'),
+                child: Text(context.l10n.cleanLibraryIntegrity),
               ),
               OutlinedButton(
                 onPressed: () async {
                   final res =
                       await _api.adminReconcileSongSizes(limit: 5);
                   if (mounted) {
-                    showSnack(context, 'Reconciled sizes: $res');
+                    showSnack(context, context.l10n.reconciledSizes('$res'));
                   }
                 },
-                child: const Text('Reconcile song sizes'),
+                child: Text(context.l10n.reconcileSongSizes),
               ),
               OutlinedButton(
                 onPressed: () async {
                   final res = await _api.adminRollupPlayEvents();
                   if (mounted) {
-                    showSnack(context, 'Play events rolled up: $res');
+                    showSnack(context, context.l10n.playEventsRolledUp('$res'));
                   }
                 },
-                child: const Text('Roll up play events (45d)'),
+                child: Text(context.l10n.rollUpPlayEvents),
               ),
               OutlinedButton(
                 onPressed: () async {
                   final res =
                       await _api.adminRecompressLegacyBatch(limit: 3);
                   if (mounted) {
-                    showSnack(context, 'Recompressed batch: $res');
+                    showSnack(context, context.l10n.recompressedBatch('$res'));
                   }
                 },
-                child: const Text('Recompress legacy audio [NEW]'),
+                child: Text(context.l10n.recompressLegacyAudio),
               ),
             ],
           ),
           const SizedBox(height: 24),
-          const Text('OAuth users',
+          Text(context.l10n.oauthUsers,
               style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
           if (_oauthUsers.isEmpty)
-            const Padding(
+            Padding(
               padding: EdgeInsets.symmetric(vertical: 8),
-              child: Text('No OAuth users yet.',
+              child: Text(context.l10n.noOauthUsersYet,
                   style: TextStyle(color: SbColors.muted)),
             )
           else
@@ -1139,7 +1150,7 @@ class _AdminScreenState extends State<AdminScreen>
               final openId = '${m['openId'] ?? ''}';
               return ListTile(
                 title: Text('${m['name'] ?? m['email'] ?? openId}'),
-                subtitle: Text('role: ${m['role'] ?? 'user'}'),
+                subtitle: Text(context.l10n.oauthRoleLabel('${m['role'] ?? 'user'}')),
                 trailing: PopupMenuButton<String>(
                   onSelected: (v) async {
                     if (v == 'make_admin' || v == 'make_user') {
@@ -1151,25 +1162,25 @@ class _AdminScreenState extends State<AdminScreen>
                           () => _api.adminDeleteOAuthUser(openId));
                     }
                   },
-                  itemBuilder: (_) => const [
+                  itemBuilder: (_) => [
                     PopupMenuItem(
                         value: 'make_admin',
-                        child: Text('Make admin (owner only)')),
+                        child: Text(context.l10n.makeAdminOwner)),
                     PopupMenuItem(
-                        value: 'make_user', child: Text('Make user')),
+                        value: 'make_user', child: Text(context.l10n.makeUser)),
                     PopupMenuItem(
-                        value: 'delete', child: Text('Delete OAuth user')),
+                        value: 'delete', child: Text(context.l10n.deleteOauthUser)),
                   ],
                 ),
               );
             }),
           const SizedBox(height: 24),
-          const Text('Audit log',
+          Text(context.l10n.auditLog,
               style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
           if (_audit.isEmpty)
-            const Padding(
+            Padding(
               padding: EdgeInsets.symmetric(vertical: 8),
-              child: Text('No audit events yet.',
+              child: Text(context.l10n.noAuditEventsYet,
                   style: TextStyle(color: SbColors.muted)),
             )
           else
@@ -1182,14 +1193,14 @@ class _AdminScreenState extends State<AdminScreen>
               );
             }),
           const SizedBox(height: 24),
-          const Text('Danger zone',
+          Text(context.l10n.dangerZone,
               style: TextStyle(
                   fontWeight: FontWeight.w700,
                   fontSize: 16,
                   color: SbColors.danger)),
           const SizedBox(height: 8),
-          const Text(
-            'Bulk actions delete platform data permanently. Each one needs its confirmation phrase typed in.',
+          Text(
+            context.l10n.dangerZoneNote,
             style: TextStyle(color: SbColors.muted, fontSize: 13),
           ),
           const SizedBox(height: 12),
@@ -1197,33 +1208,33 @@ class _AdminScreenState extends State<AdminScreen>
             spacing: 8,
             runSpacing: 8,
             children: [
-              _dangerButton(context, 'Delete ALL comments',
+              _dangerButton(context, context.l10n.deleteAllComments,
                   'DELETE_ALL_COMMENTS', () async {
                 final res = await _api.adminBulkDeleteComments();
-                if (mounted) showSnack(context, 'Done: $res');
+                if (mounted) showSnack(context, context.l10n.doneResult('$res'));
               }),
-              _dangerButton(context, 'Delete ALL playlists',
+              _dangerButton(context, context.l10n.deleteAllPlaylists,
                   'DELETE_ALL_PLAYLISTS', () async {
                 final res = await _api.adminBulkDeletePlaylists();
-                if (mounted) showSnack(context, 'Done: $res');
+                if (mounted) showSnack(context, context.l10n.doneResult('$res'));
               }),
-              _dangerButton(context, 'Delete ALL accounts',
+              _dangerButton(context, context.l10n.deleteAllAccounts,
                   'DELETE_ALL_ACCOUNTS', () async {
                 final res = await _api.adminBulkDeleteAccounts();
-                if (mounted) showSnack(context, 'Done: $res');
+                if (mounted) showSnack(context, context.l10n.doneResult('$res'));
               }),
-              _dangerButton(context, 'WIPE platform content',
+              _dangerButton(context, context.l10n.wipePlatformContent,
                   'WIPE_PLATFORM_CONTENT', () async {
                 final res = await _api.adminBulkWipePlatformContent();
-                if (mounted) showSnack(context, 'Done: $res');
+                if (mounted) showSnack(context, context.l10n.doneResult('$res'));
               }),
             ],
           ),
           const SizedBox(height: 24),
-          const GatedFeature(
-            label: 'Scheduled maintenance mode [NEW]',
+          GatedFeature(
+            label: context.l10n.scheduledMaintenanceMode,
             reason:
-                'The website has no maintenance-mode endpoint — the app lists it as a named gap (see README.md). Use Render to stop the service if maintenance is needed.',
+                context.l10n.maintenanceGap,
             icon: Icons.build_outlined,
           ),
         ],
@@ -1238,7 +1249,7 @@ class _AdminScreenState extends State<AdminScreen>
       onPressed: () async {
         final ok = await _typedConfirm(context,
             title: label,
-            message: 'This permanently deletes data across SoundBlast.',
+            message: context.l10n.permanentlyDeletesData,
             confirmWord: word);
         if (ok) {
           try {

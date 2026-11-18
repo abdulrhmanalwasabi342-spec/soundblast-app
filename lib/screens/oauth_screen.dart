@@ -133,7 +133,7 @@ class _GitHubOAuthScreenState extends State<GitHubOAuthScreen> {
       // can read it — JavaScript never can.
       if (WebViewPlatform.instance is! AndroidWebViewPlatform) {
         throw UnsupportedError(
-            'GitHub sign-in cookie extraction is Android-only.');
+            context.l10n.oauthAndroidOnly);
       }
       final manager = WebViewCookieManager();
       final androidManager =

@@ -123,8 +123,34 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: SafeArea(
-        child: Column(
+      // The website's onboarding stage: the anime backdrop art, full
+      // stage, dimmed so the text stays readable.
+      body: Stack(
+        children: [
+          Positioned.fill(
+            child: Image.asset(
+              'assets/images/onboarding-anime.png',
+              fit: BoxFit.cover,
+            ),
+          ),
+          Positioned.fill(
+            child: Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Colors.black.withValues(alpha: 0.55),
+                    Colors.black.withValues(alpha: 0.35),
+                    SbColors.background.withValues(alpha: 0.92),
+                  ],
+                  stops: const [0.0, 0.45, 1.0],
+                ),
+              ),
+            ),
+          ),
+          SafeArea(
+            child: Column(
           children: [
             Align(
               alignment: Alignment.centerRight,
@@ -220,6 +246,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             const SizedBox(height: 24),
           ],
         ),
+          ),
+        ],
       ),
     );
   }
@@ -756,13 +784,13 @@ class ForgotPasswordScreen extends StatelessWidget {
             Text(context.l10n.resetPassword,
                 style: TextStyle(fontSize: 24, fontWeight: FontWeight.w800)),
             const SizedBox(height: 12),
-            const Text(
-              'Password-reset email is not configured for SoundBlast yet. To protect your account, this app will not pretend that a reset message was sent.',
+            Text(
+              context.l10n.passwordResetNotConfigured,
               style: TextStyle(color: SbColors.muted, fontSize: 15),
             ),
             const SizedBox(height: 16),
-            const Text(
-              'If you lost access to your account, contact SoundBlast support from the Contact page and include the email address of your account.',
+            Text(
+              context.l10n.lostAccessContactSupport,
               style: TextStyle(color: SbColors.muted, fontSize: 15),
             ),
             const SizedBox(height: 32),

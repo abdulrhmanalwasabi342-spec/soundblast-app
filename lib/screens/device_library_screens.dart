@@ -39,19 +39,20 @@ IconData deviceCategoryIcon(DeviceCategory c) => switch (c) {
 
 /// Groups the on-device songs for one category, sorted by group name.
 Map<String, List<DeviceSong>> groupDeviceSongs(
-    DeviceCategory c, List<DeviceSong> songs) {
+    BuildContext context, DeviceCategory c, List<DeviceSong> songs) {
+  final l10n = context.l10n;
   final map = <String, List<DeviceSong>>{};
   for (final d in songs) {
     final key = switch (c) {
-      DeviceCategory.tracks => 'All tracks',
+      DeviceCategory.tracks => l10n.allTracks,
       DeviceCategory.albums =>
-        (d.album?.isNotEmpty ?? false) ? d.album! : 'Unknown album',
+        (d.album?.isNotEmpty ?? false) ? d.album! : l10n.unknownAlbum,
       DeviceCategory.artists => d.artist,
       DeviceCategory.genres =>
-        (d.genre?.isNotEmpty ?? false) ? d.genre! : 'Unknown genre',
+        (d.genre?.isNotEmpty ?? false) ? d.genre! : l10n.unknownGenre,
       DeviceCategory.folders => d.folderName,
       DeviceCategory.composers =>
-        (d.composer?.isNotEmpty ?? false) ? d.composer! : 'Unknown composer',
+        (d.composer?.isNotEmpty ?? false) ? d.composer! : l10n.unknownComposer,
     };
     (map[key] ??= []).add(d);
   }
@@ -105,7 +106,7 @@ class DeviceCategoryScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final songs = context.watch<AppState>().deviceSongs;
-    final groups = groupDeviceSongs(category, songs);
+    final groups = groupDeviceSongs(context, category, songs);
     return Scaffold(
       appBar: AppBar(title: Text(deviceCategoryLabel(context, category))),
       body: groups.isEmpty
@@ -129,7 +130,7 @@ class DeviceCategoryScreen extends StatelessWidget {
                   ),
                   title: Text(e.key),
                   subtitle: Text(
-                      '${e.value.length} song${e.value.length == 1 ? '' : 's'}'),
+                      context.l10n.songsCount(e.value.length)),
                   trailing: const Icon(Icons.chevron_right,
                       color: SbColors.muted),
                   onTap: () => Navigator.of(context).push(
@@ -184,7 +185,7 @@ class DeviceSongsScreen extends StatelessWidget {
                       color: SbColors.accent),
                   title: Text(p.name),
                   subtitle: Text(
-                      '${p.songIds.length} song${p.songIds.length == 1 ? '' : 's'}'),
+                      context.l10n.songsCount(p.songIds.length)),
                   trailing: store.contains(p, song.id)
                       ? const Icon(Icons.check, color: SbColors.accent)
                       : null,
@@ -208,7 +209,7 @@ class DeviceSongsScreen extends StatelessWidget {
     if (picked != null) {
       await store.addSong(picked, song.id);
       if (context.mounted) {
-        showSnack(context, 'Added to "${picked.name}"');
+        showSnack(context, context.l10n.addedToPlaylist(picked.name));
       }
     }
   }
@@ -265,7 +266,7 @@ class DeviceSongsScreen extends StatelessWidget {
                         trailing: IconButton(
                           icon: const Icon(Icons.more_vert,
                               color: SbColors.muted, size: 20),
-                          tooltip: 'Add to playlist',
+                          tooltip: context.l10n.addToPlaylist,
                           onPressed: () => _showAddToPlaylist(context, ds),
                         ),
                       );
@@ -308,7 +309,7 @@ class LocalPlaylistDetailScreen extends StatelessWidget {
                 final ok = await confirmDialog(context,
                     title: context.l10n.deletePlaylist,
                     message:
-                        'Delete "${playlist.name}"? The songs stay on this device.');
+                        context.l10n.deletePlaylistConfirm(playlist.name));
                 if (ok && context.mounted) {
                   await state.localPlaylists.delete(playlist);
                   Navigator.of(context).pop();
@@ -327,7 +328,7 @@ class LocalPlaylistDetailScreen extends StatelessWidget {
               icon: Icons.playlist_remove,
               title: context.l10n.noSongsYet,
               message:
-                  'Add songs from the on-device library (⋮ on any song).',
+                  context.l10n.addSongsHint,
             )
           : Column(
               children: [
@@ -361,7 +362,7 @@ class LocalPlaylistDetailScreen extends StatelessWidget {
                         trailing: IconButton(
                           icon: const Icon(Icons.delete_outline,
                               color: SbColors.muted, size: 20),
-                          tooltip: 'Remove from playlist',
+                          tooltip: context.l10n.removeFromPlaylist,
                           onPressed: () => state.localPlaylists
                               .removeSong(playlist, ds.id),
                         ),

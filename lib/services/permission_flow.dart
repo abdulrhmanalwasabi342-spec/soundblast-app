@@ -70,20 +70,20 @@ class PermissionFlow {
     if (asked == 0) {
       final goAhead = await _showRationale(
         context,
-        title: 'Play songs already on your phone',
+        title: context.l10n.permMediaTitle,
         body:
-            'SoundBlast can play the audio files already on this device — your downloaded songs and your own music library — even without internet.\n\nWe will ask for access to audio files on this device, only for playing your music. Nothing is uploaded.',
-        actionLabel: 'Allow access',
+            context.l10n.permMediaBody,
+        actionLabel: context.l10n.permAllowAccess,
       );
       if (goAhead != true) return false;
     } else {
       // Denied once: one short explanation, then the second (and last) ask.
       final goAhead = await _showRationale(
         context,
-        title: 'Access is still off',
+        title: context.l10n.permAccessOffTitle,
         body:
-            'Without access to audio files, SoundBlast cannot list or play the songs stored on this device. Downloaded SoundBlast songs still work.\n\nYou can allow access now — this is the last time we will ask.',
-        actionLabel: 'Ask again',
+            context.l10n.permAccessOffBody,
+        actionLabel: context.l10n.permAskAgain,
       );
       if (goAhead != true) return false;
     }
@@ -116,10 +116,10 @@ class PermissionFlow {
 
     final goAhead = await _showRationale(
       context,
-      title: 'Keep the player in your notifications',
+      title: context.l10n.permNotifTitle,
       body:
-          'When a song is playing, SoundBlast shows its player in the notification shade — title, artist, cover, and play / pause / next — so you can control it while the app is closed.\n\nWe will ask once to show notifications. If you skip it, music still plays; only the notification controls will be missing.',
-      actionLabel: 'Show player controls',
+          context.l10n.permNotifBody,
+      actionLabel: context.l10n.permShowPlayerControls,
     );
     if (goAhead != true) return false;
     await _bumpAsked(_notifAskedKey);
@@ -129,7 +129,8 @@ class PermissionFlow {
 
   /// Calm in-app note shown when a permission can no longer be asked for:
   /// no re-prompt, just an explanation + a button to app settings.
-  static Widget permissionBlockedNote({
+  static Widget permissionBlockedNote(
+    BuildContext context, {
     required String title,
     required String body,
   }) {
@@ -158,7 +159,7 @@ class PermissionFlow {
           OutlinedButton.icon(
             onPressed: openAppSettings,
             icon: const Icon(Icons.settings, size: 18),
-            label: const Text('Open app settings'),
+            label: Text(context.l10n.openAppSettings),
           ),
         ],
       ),
@@ -203,7 +204,7 @@ class PermissionFlow {
                 width: double.infinity,
                 child: TextButton(
                   onPressed: () => Navigator.of(ctx).pop(false),
-                  child: const Text('Not now'),
+                  child: Text(context.l10n.notNow),
                 ),
               ),
             ],

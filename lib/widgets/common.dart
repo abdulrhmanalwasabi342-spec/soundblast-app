@@ -207,7 +207,6 @@ String formatCount(int n) {
   return '$n';
 }
 
-String formatPlays(int n) => '${formatCount(n)} plays';
 
 class CoverImage extends StatelessWidget {
   final String? url;
@@ -296,7 +295,7 @@ class SectionHeader extends StatelessWidget {
           if (onSeeAll != null)
             TextButton(
               onPressed: onSeeAll,
-              child: const Text('See all',
+              child: Text(context.l10n.seeAll,
                   style: TextStyle(color: SbColors.accent)),
             ),
         ],
@@ -400,7 +399,7 @@ class ErrorView extends StatelessWidget {
                     const TextStyle(color: SbColors.muted, fontSize: 14),
                 textAlign: TextAlign.center),
             const SizedBox(height: 16),
-            ElevatedButton(onPressed: onRetry, child: const Text('Retry')),
+            ElevatedButton(onPressed: onRetry, child: Text(context.l10n.retry)),
           ],
         ),
       ),
@@ -453,7 +452,7 @@ class SongTile extends StatelessWidget {
         [
           song.artist,
           if (song.durationLabel.isNotEmpty) song.durationLabel,
-          if (song.playCount > 0) formatPlays(song.playCount),
+          if (song.playCount > 0) context.l10n.playsCount(formatCount(song.playCount)),
         ].join(' • '),
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
@@ -522,7 +521,7 @@ class ArtistCard extends StatelessWidget {
                   ),
               ],
             ),
-            Text('${formatCount(artist.followerCount)} followers',
+            Text(context.l10n.followersCount(formatCount(artist.followerCount)),
                 style:
                     const TextStyle(color: SbColors.muted, fontSize: 12)),
           ],
@@ -548,10 +547,10 @@ Future<bool> confirmDialog(BuildContext context,
       actions: [
         TextButton(
             onPressed: () => Navigator.of(ctx).pop(false),
-            child: const Text('Cancel')),
+            child: Text(context.l10n.cancel)),
         ElevatedButton(
             onPressed: () => Navigator.of(ctx).pop(true),
-            child: const Text('Confirm')),
+            child: Text(context.l10n.confirm)),
       ],
     ),
   );
