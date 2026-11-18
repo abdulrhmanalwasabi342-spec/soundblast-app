@@ -980,7 +980,11 @@ class _PlaylistDetailsScreenState extends State<PlaylistDetailsScreen> {
       _error = null;
     });
     try {
-      final res = await state.api.playlistDetail(widget.playlistId);
+      // Bounded wait: a stalled request (cold server, dropped connection)
+      // must fail into the error view with Retry — never spin forever.
+      final res = await state.api
+          .playlistDetail(widget.playlistId)
+          .timeout(const Duration(seconds: 30));
       if (!mounted) return;
       setState(() {
         _playlist = res.playlist;
