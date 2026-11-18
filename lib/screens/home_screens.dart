@@ -56,7 +56,11 @@ class _HomeScreenState extends State<HomeScreen> {
         _summary = cached;
         _songs = state.cachedSongs ?? [];
         _loading = false;
-        _showingCache = true;
+        // The banner is a failure indicator, not a loading one: showing
+        // "you're offline" while the refresh is still running (the free
+        // server takes a while to wake) cried wolf on every repeat open
+        // even with the phone online. It is set only in the catch below.
+        _showingCache = false;
       } else {
         _loading = true;
         _showingCache = false;

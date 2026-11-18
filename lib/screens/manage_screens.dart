@@ -3,6 +3,8 @@ import 'dart:convert';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:just_audio/just_audio.dart';
+import 'package:just_audio_platform_interface/just_audio_platform_interface.dart';
+import 'package:just_audio_platform_interface/method_channel_just_audio.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -338,23 +340,47 @@ class _UploadSongScreenState extends State<UploadSongScreen> {
   }
 
   Future<void> _pickAudio() async {
-    final result = await FilePicker.platform.pickFiles(
-      type: FileType.custom,
-      allowedExtensions: ['mp3', 'wav', 'm4a'],
-      withData: true,
-    );
-    if (result == null || result.files.isEmpty) return;
-    final file = result.files.first;
+    // The picker itself can fail (a file the system cannot hand over):
+    // without this the pick just silently did nothing and the row kept
+    // saying "choose an audio file" even though one was chosen.
+    final PlatformFile file;
+    try {
+      final result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['mp3', 'wav', 'm4a'],
+        withData: true,
+      );
+      if (result == null || result.files.isEmpty) return;
+      file = result.files.first;
+    } catch (_) {
+      if (!mounted) return;
+      showSnack(context, context.l10n.couldNotReadFiles);
+      return;
+    }
     int duration = 0;
     if (file.path != null) {
+      // Probe on the plain platform: the main player owns the single
+      // background player instance, so a second AudioPlayer here would
+      // throw "supports only a single player instance" and the duration
+      // would stay 0. The swap is safe — each player captures its own
+      // platform at construction, and the swap is restored in finally.
+      final backgroundPlatform = JustAudioPlatform.instance;
+      JustAudioPlatform.instance = MethodChannelJustAudio();
       try {
         final probe = AudioPlayer();
-        duration = (await probe.setFilePath(file.path!))
+        duration = (await probe
+                    .setFilePath(file.path!)
+                    .timeout(const Duration(seconds: 10)))
                 ?.inSeconds ??
             0;
         await probe.dispose();
-      } catch (_) {}
+      } catch (_) {
+        // Duration stays unknown; the song still uploads.
+      } finally {
+        JustAudioPlatform.instance = backgroundPlatform;
+      }
     }
+    if (!mounted) return;
     setState(() {
       _audio = file;
       _durationSec = duration;

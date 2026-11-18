@@ -2,7 +2,7 @@ name: soundblast
 description: "SoundBlast — music streaming platform for Android. Native Flutter client for the SoundBlast website (https://soundblast.onrender.com)."
 publish_to: 'none'
 
-version: 1.0.18+19
+version: 1.0.19+20
 
 environment:
   sdk: ^3.9.2
@@ -19,6 +19,9 @@ dependencies:
   # NOTE: just_audio_background has no 0.9.x releases — the real latest is
   # 0.0.1-beta.17 (audio_service 0.18 based). ^0.9.1 does not exist on pub.dev.
   just_audio_background: ^0.0.1-beta.17
+  # Direct: the upload duration probe and the background-audio
+  # fallback swap the platform instance by hand (see main.dart).
+  just_audio_platform_interface: ^4.6.0
   audio_session: ^0.1.21
   flutter_secure_storage: ^9.2.2
   shared_preferences: ^2.3.3

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:just_audio_background/just_audio_background.dart';
+import 'package:just_audio_platform_interface/just_audio_platform_interface.dart';
+import 'package:just_audio_platform_interface/method_channel_just_audio.dart';
 import 'package:provider/provider.dart';
 
 import 'l10n/app_localizations.dart';
@@ -32,16 +34,29 @@ void main() {
     home: const Scaffold(body: Center(child: CircularProgressIndicator())),
   ));
   Future(() async {
+    // The background service MUST start before any AudioPlayer exists —
+    // but a failed start must not kill playback outright. init() swaps
+    // the platform instance BEFORE it starts the service, so a failure
+    // (timeout or throw — seen on a real phone as LateInitializationError
+    // for _audioHandler on the first play) leaves the background plugin
+    // in place with its late handler unset, and every later play dies.
+    // Restoring the plain platform keeps playback working in the
+    // foreground (no media notification, no play-after-close) instead
+    // of breaking the player entirely.
+    var backgroundReady = false;
     try {
       await JustAudioBackground.init(
         androidNotificationChannelId: 'com.soundblast.app.audio',
         androidNotificationChannelName: 'SoundBlast playback',
         androidNotificationOngoing: true,
         androidNotificationIcon: 'mipmap/ic_launcher',
-      ).timeout(const Duration(seconds: 10));
-    } catch (_) {
-      // The service is optional: without it playback still works in the
-      // foreground; it just cannot continue after the app closes.
+      ).timeout(const Duration(seconds: 30));
+      backgroundReady = true;
+    } catch (e) {
+      debugPrint('SoundBlast background audio unavailable: $e');
+    }
+    if (!backgroundReady) {
+      JustAudioPlatform.instance = MethodChannelJustAudio();
     }
     final appState = AppState();
     runApp(
