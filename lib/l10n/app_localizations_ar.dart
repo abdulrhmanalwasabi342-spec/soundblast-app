@@ -170,6 +170,9 @@ class AppLocalizationsAr extends AppLocalizations {
   String get authReadTerms => 'اقرأ الشروط والخصوصية والأذونات';
 
   @override
+  String get authSessionFailed => 'تسجيل الدخول لم ينشئ جلسة. حاول مجددًا.';
+
+  @override
   String get authStageName => 'الاسم الفني';
 
   @override

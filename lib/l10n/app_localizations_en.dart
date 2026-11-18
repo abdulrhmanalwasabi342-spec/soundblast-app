@@ -164,6 +164,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get authReadTerms => 'Read the Terms, Privacy & Permissions';
 
   @override
+  String get authSessionFailed => 'Sign-in did not create a session. Please try again.';
+
+  @override
   String get authStageName => 'Stage name';
 
   @override

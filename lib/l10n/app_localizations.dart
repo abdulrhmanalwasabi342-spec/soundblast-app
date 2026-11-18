@@ -365,6 +365,12 @@ abstract class AppLocalizations {
   /// **'Read the Terms, Privacy & Permissions'**
   String get authReadTerms;
 
+  /// No description provided for @authSessionFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign-in did not create a session. Please try again.'**
+  String get authSessionFailed;
+
   /// No description provided for @authStageName.
   ///
   /// In en, this message translates to:

@@ -23,6 +23,19 @@ class SoundBlastApi {
     return Map<String, dynamic>.from(json as Map);
   }
 
+  /// Exchange a one-time OAuth app code (soundblast://oauth?code=…) for a
+  /// session. Used by the Google system-browser flow (and the GitHub app
+  /// flow before it). Returns false when the code is invalid or expired.
+  Future<bool> exchangeAppCode(String code) async {
+    try {
+      final json =
+          await client.mutation('localAuth.exchangeAppCode', {'code': code});
+      return (json as Map)['success'] == true;
+    } catch (_) {
+      return false;
+    }
+  }
+
   Future<Map<String, dynamic>> signup({
     required String name,
     required String email,

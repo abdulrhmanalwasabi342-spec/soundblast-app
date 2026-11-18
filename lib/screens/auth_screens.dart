@@ -1,8 +1,11 @@
 import 'dart:convert';
+import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_web_auth_2/flutter_web_auth_2.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:provider/provider.dart';
 
@@ -13,6 +16,67 @@ import '../widgets/common.dart';
 
 /// Onboarding — the website's three-screen first-visit intro.
 /// "Enter SoundBlast" marks onboarding done (local flag, same as the web).
+
+/// "Continue with Google" — Google forbids OAuth in an embedded WebView
+/// (it answers 403 disallowed_useragent), so this opens the system browser
+/// (Chrome Custom Tab) and Google returns to the app on
+/// soundblast://oauth?code=…; the code is exchanged for a session via
+/// localAuth.exchangeAppCode. Pre-flight: the start URL must 302 to
+/// accounts.google.com — anything else (e.g. the server's 503 while the
+/// Google keys are not set yet) keeps the button honestly gated with the
+/// "not set up" message instead of opening a dead page.
+Future<void> signInWithGoogle(BuildContext context) async {
+  final state = context.read<AppState>();
+  final l10n = context.l10n;
+  const startUrl = 'https://soundblast.onrender.com/api/auth/google?app=1';
+  bool up = false;
+  try {
+    final client = HttpClient();
+    client.connectionTimeout = const Duration(seconds: 30);
+    final request = await client.getUrl(Uri.parse(startUrl));
+    request.followRedirects = false;
+    final response =
+        await request.close().timeout(const Duration(seconds: 30));
+    await response.drain<void>();
+    final location = response.headers.value('location') ?? '';
+    up = response.statusCode == 302 &&
+        location.contains('accounts.google.com');
+    client.close();
+  } catch (_) {
+    up = false;
+  }
+  if (!context.mounted) return;
+  if (!up) {
+    showSnack(context, l10n.authGoogleNotSetup);
+    return;
+  }
+  try {
+    final result = await FlutterWebAuth2.authenticate(
+      url: startUrl,
+      callbackUrlScheme: 'soundblast',
+    );
+    final code = Uri.parse(result).queryParameters['code'];
+    if (code == null || code.isEmpty) {
+      if (context.mounted) showSnack(context, l10n.authSessionFailed);
+      return;
+    }
+    final ok = await state.api.exchangeAppCode(code);
+    if (!ok) {
+      if (context.mounted) showSnack(context, l10n.authSessionFailed);
+      return;
+    }
+    final user = await state.api.me();
+    if (user != null) state.setUser(user);
+    await state.refreshLibrary();
+    if (context.mounted) {
+      Navigator.of(context).pushNamedAndRemoveUntil('/', (_) => false);
+    }
+  } on PlatformException {
+    // The user closed the browser tab — nothing to do.
+  } catch (_) {
+    if (context.mounted) showSnack(context, l10n.authSessionFailed);
+  }
+}
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key});
 
@@ -316,10 +380,10 @@ class _LoginScreenState extends State<LoginScreen> {
                       .pushReplacementNamed('/signup'),
                 ),
                 const SizedBox(height: 12),
-                GatedFeature(
+                AuthOutlineButton(
                   label: context.l10n.authContinueGoogle,
-                  reason: "Google sign-in isn't set up on the server yet.",
                   icon: FontAwesomeIcons.google,
+                  onPressed: () => signInWithGoogle(context),
                 ),
               ],
             ),
@@ -648,10 +712,10 @@ class _SignupScreenState extends State<SignupScreen> {
                       .pushReplacementNamed('/login'),
                 ),
                 const SizedBox(height: 12),
-                GatedFeature(
+                AuthOutlineButton(
                   label: context.l10n.authContinueGoogle,
-                  reason: context.l10n.authGoogleNotSetup,
                   icon: FontAwesomeIcons.google,
+                  onPressed: () => signInWithGoogle(context),
                 ),
               ],
             ),
