@@ -134,7 +134,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get appName => 'SoundBlast';
 
   @override
-  String get appVersionLabel => 'الإصدار 1.0.19 — تطبيق أندرويد';
+  String get appVersionLabel => 'الإصدار 1.0.20 — تطبيق أندرويد';
 
   @override
   String get archive => 'أرشفة';
@@ -1836,4 +1836,10 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get artist => 'فنان';
+
+  @override
+  String get backgroundAudioReady => 'الصوت بالخلفية: جاهز — الموسيقى تستمر بعد إغلاق التطبيق.';
+
+  @override
+  String get backgroundAudioUnavailable => 'الصوت بالخلفية: غير متاح — الموسيقى تتوقف عند إغلاق التطبيق.';
 }

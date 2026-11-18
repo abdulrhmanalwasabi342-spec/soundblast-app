@@ -171,7 +171,12 @@ class AppState extends ChangeNotifier {
   // before it in the queue.
   List<int> _playableIndices = [];
 
-  AppState() {
+  /// Whether the background audio service started: when it did not,
+  /// playback still works in the foreground but stops when the app
+  /// closes. Shown on the About screen so the cause is visible.
+  final bool backgroundAudioReady;
+
+  AppState({this.backgroundAudioReady = false}) {
     trpc.onSessionExpired = handleSessionExpired;
     _initPlayer();
   }
@@ -366,7 +371,11 @@ class AppState extends ChangeNotifier {
     if (res['success'] == true) {
       user = User.fromJson(res['user']);
       notifyListeners();
-      await refreshLibrary();
+      // The library (favorites / liked / playlists) loads in the
+      // background: awaiting it here kept the button spinning through
+      // four API calls on a cold server, which felt like a stuck login.
+      // The tabs fill in when it lands.
+      unawaited(refreshLibrary());
       return null;
     }
     // Error codes, not messages: the auth screens map them to the
@@ -396,7 +405,11 @@ class AppState extends ChangeNotifier {
     if (res['success'] == true) {
       user = User.fromJson(res['user']);
       notifyListeners();
-      await refreshLibrary();
+      // The library (favorites / liked / playlists) loads in the
+      // background: awaiting it here kept the button spinning through
+      // four API calls on a cold server, which felt like a stuck login.
+      // The tabs fill in when it lands.
+      unawaited(refreshLibrary());
       return null;
     }
     final err = res['error']?.toString();

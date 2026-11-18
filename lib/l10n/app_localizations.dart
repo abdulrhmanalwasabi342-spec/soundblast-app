@@ -308,7 +308,7 @@ abstract class AppLocalizations {
   /// No description provided for @appVersionLabel.
   ///
   /// In en, this message translates to:
-  /// **'Version 1.0.19 — Android app'**
+  /// **'Version 1.0.20 — Android app'**
   String get appVersionLabel;
 
   /// No description provided for @archive.
@@ -3460,6 +3460,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Artist'**
   String get artist;
+
+  /// No description provided for @backgroundAudioReady.
+  ///
+  /// In en, this message translates to:
+  /// **'Background audio: ready — music keeps playing after the app closes.'**
+  String get backgroundAudioReady;
+
+  /// No description provided for @backgroundAudioUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Background audio: unavailable — music stops when the app closes.'**
+  String get backgroundAudioUnavailable;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

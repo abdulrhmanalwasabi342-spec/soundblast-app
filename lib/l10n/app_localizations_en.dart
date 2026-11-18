@@ -131,7 +131,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get appName => 'SoundBlast';
 
   @override
-  String get appVersionLabel => 'Version 1.0.19 — Android app';
+  String get appVersionLabel => 'Version 1.0.20 — Android app';
 
   @override
   String get archive => 'Archive';
@@ -1818,4 +1818,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get artist => 'Artist';
+
+  @override
+  String get backgroundAudioReady => 'Background audio: ready — music keeps playing after the app closes.';
+
+  @override
+  String get backgroundAudioUnavailable => 'Background audio: unavailable — music stops when the app closes.';
 }

@@ -58,7 +58,8 @@ void main() {
     if (!backgroundReady) {
       JustAudioPlatform.instance = MethodChannelJustAudio();
     }
-    final appState = AppState();
+    final appState =
+        AppState(backgroundAudioReady: backgroundReady);
     runApp(
       ChangeNotifierProvider.value(
         value: appState,

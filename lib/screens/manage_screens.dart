@@ -1381,6 +1381,7 @@ class AboutScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final state = context.watch<AppState>();
     return Scaffold(
       appBar: AppBar(title: Text(context.l10n.aboutSoundBlast)),
       body: ListView(
@@ -1410,6 +1411,13 @@ class AboutScreen extends StatelessWidget {
                 style: const TextStyle(color: SbColors.muted, fontSize: 13),
               );
             },
+          ),
+          const SizedBox(height: 8),
+          Text(
+            state.backgroundAudioReady
+                ? context.l10n.backgroundAudioReady
+                : context.l10n.backgroundAudioUnavailable,
+            style: const TextStyle(color: SbColors.muted, fontSize: 13),
           ),
         ],
       ),
