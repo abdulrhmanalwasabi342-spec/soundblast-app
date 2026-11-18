@@ -134,7 +134,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get appName => 'SoundBlast';
 
   @override
-  String get appVersionLabel => 'الإصدار 1.0.0 — تطبيق أندرويد';
+  String get appVersionLabel => 'الإصدار 1.0.18 — تطبيق أندرويد';
 
   @override
   String get archive => 'أرشفة';
@@ -1798,4 +1798,42 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get yourMessage => 'رسالتك';
+
+  @override
+  String get authInvalidCredentials => 'البريد الإلكتروني أو كلمة المرور غير صحيحة.';
+
+  @override
+  String get accountSuspended => 'هذا الحساب موقوف. تواصل مع دعم SoundBlast.';
+
+  @override
+  String get accountExists => 'يوجد حساب بهذا البريد الإلكتروني بالفعل.';
+
+  @override
+  String get createAccountFailed => 'تعذّر إنشاء الحساب. حاول مرة أخرى.';
+
+  @override
+  String get somethingWentWrong => 'حدث خطأ ما. حاول مرة أخرى.';
+
+  @override
+  String get playlistCreated => 'تم إنشاء قائمة التشغيل.';
+
+  @override
+  String get playlistPrivateOrGone => 'هذه القائمة خاصة أو لم تعد موجودة.';
+
+  @override
+  String get playlist => 'قائمة تشغيل';
+
+  @override
+  String appVersion(String version) {
+    return 'الإصدار $version — تطبيق أندرويد';
+  }
+
+  @override
+  String get all => 'الكل';
+
+  @override
+  String get album => 'ألبوم';
+
+  @override
+  String get artist => 'فنان';
 }

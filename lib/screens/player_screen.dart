@@ -21,6 +21,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
   List<SongComment> _comments = [];
   bool _loadingComments = false;
   String? _commentsError;
+  int? _commentsSongId;
   final _commentController = TextEditingController();
   bool _showLyrics = false;
 
@@ -32,21 +33,23 @@ class _PlayerScreenState extends State<PlayerScreen> {
 
   Future<void> _loadComments(int songId) async {
     final state = context.read<AppState>();
+    _commentsSongId = songId;
     setState(() {
       _loadingComments = true;
+      _comments = [];
       _commentsError = null;
     });
     try {
       final comments = await state.api.commentsForSong(songId);
-      if (!mounted) return;
+      if (!mounted || _commentsSongId != songId) return;
       setState(() {
         _comments = comments;
         _loadingComments = false;
       });
     } catch (e) {
-      if (!mounted) return;
+      if (!mounted || _commentsSongId != songId) return;
       setState(() {
-        _commentsError = e.toString();
+        _commentsError = friendlyError(e, context.l10n);
         _loadingComments = false;
       });
     }
@@ -57,6 +60,15 @@ class _PlayerScreenState extends State<PlayerScreen> {
     return Consumer<AppState>(
       builder: (context, state, _) {
         final song = state.currentSong;
+        // Comments load with the song — the section below always renders,
+        // so waiting for the comments button left it showing "no comments".
+        if (song != null &&
+            song.id != _commentsSongId &&
+            !_loadingComments) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) _loadComments(song.id);
+          });
+        }
         if (song == null) {
           return Scaffold(
             appBar: AppBar(title: Text(context.l10n.nowPlayingTitle)),
@@ -232,7 +244,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
                             await state.api.likeComment(c.id);
                             await _loadComments(song.id);
                           } catch (e) {
-                            if (mounted) showSnack(context, e.toString());
+                            if (mounted) showSnack(context, friendlyError(e, context.l10n));
                           }
                         },
                       ),
@@ -251,7 +263,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
                                 await _loadComments(song.id);
                               } catch (e) {
                                 if (mounted) {
-                                  showSnack(context, e.toString());
+                                  showSnack(context, friendlyError(e, context.l10n));
                                 }
                               }
                             }
@@ -288,7 +300,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
                   _commentController.clear();
                   await _loadComments(song.id);
                 } catch (e) {
-                  if (mounted) showSnack(context, e.toString());
+                  if (mounted) showSnack(context, friendlyError(e, context.l10n));
                 }
               },
             ),

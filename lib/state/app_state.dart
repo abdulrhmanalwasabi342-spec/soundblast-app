@@ -164,21 +164,33 @@ class AppState extends ChangeNotifier {
   StreamSubscription<PlayerState>? _playerSub;
   StreamSubscription<int?>? _indexSub;
   bool _playerReady = false;
-  // Index of the first playable song in `queue` (songs without any audio
-  // are skipped when building the audio source list).
-  int _playableOffset = 0;
+  // Queue positions of the playable songs (songs without any audio are
+  // skipped when building the audio source list): the player's index
+  // inside the concatenating source maps back through this list, so a
+  // tap always plays the tapped song even when unplayable songs sit
+  // before it in the queue.
+  List<int> _playableIndices = [];
 
   AppState() {
+    trpc.onSessionExpired = handleSessionExpired;
     _initPlayer();
   }
 
   Future<void> _initPlayer() async {
-    final session = await AudioSession.instance;
-    await session.configure(const AudioSessionConfiguration.music());
+    try {
+      final session = await AudioSession.instance;
+      await session.configure(const AudioSessionConfiguration.music());
+    } catch (e) {
+      // The audio session is best-effort: just_audio can play without it,
+      // and a session failure must never leave the player dead with a
+      // frozen timer and no message (the reported symptom). The player is
+      // still marked ready below.
+      debugPrint('SoundBlast audio session setup failed: $e');
+    }
     _playerSub = player.playerStateStream.listen((_) => notifyListeners());
     _indexSub = player.currentIndexStream.listen((i) {
-      if (i != null) {
-        queueIndex = i + _playableOffset;
+      if (i != null && i < _playableIndices.length) {
+        queueIndex = _playableIndices[i];
         notifyListeners();
       }
     });
@@ -225,6 +237,9 @@ class AppState extends ChangeNotifier {
     authChecked = true;
     notifyListeners();
     downloads.addListener(notifyListeners);
+    // Downloads use the same (Cronet) transport as every server call, so
+    // they work on the networks where the browser works.
+    downloads.clientFactory = TrpcClient.newClient;
     unawaited(downloads.load());
     localPlaylists.addListener(notifyListeners);
     unawaited(localPlaylists.load());
@@ -237,9 +252,17 @@ class AppState extends ChangeNotifier {
   Future<void> _refreshAuth() async {
     try {
       user = await api.me();
-    } catch (e) {
-      lastError = e.toString();
-      user = null;
+    } catch (_) {
+      // One retry: a cold start against the sleeping backend often fails
+      // once and answers seconds later; without it the user stays a guest
+      // until the next app restart.
+      await Future<void>.delayed(const Duration(seconds: 15));
+      try {
+        user = await api.me();
+      } catch (e) {
+        lastError = e.toString();
+        user = null;
+      }
     }
     notifyListeners();
     if (user != null) {
@@ -346,12 +369,12 @@ class AppState extends ChangeNotifier {
       await refreshLibrary();
       return null;
     }
+    // Error codes, not messages: the auth screens map them to the
+    // localized strings, so Arabic users never see hardcoded English.
     final err = res['error']?.toString();
-    if (err == 'suspended') {
-      return 'This account is suspended. Contact SoundBlast support.';
-    }
-    if (err == 'exists') return 'An account with this email already exists.';
-    return 'Invalid email or password.';
+    if (err == 'suspended') return 'suspended';
+    if (err == 'exists') return 'exists';
+    return 'invalid';
   }
 
   Future<String?> signup({
@@ -377,19 +400,35 @@ class AppState extends ChangeNotifier {
       return null;
     }
     final err = res['error']?.toString();
-    if (err == 'exists') {
-      return 'An account with this email already exists.';
-    }
-    if (err == 'stageName') {
-      return 'Artists need a stage name.';
-    }
-    return 'Could not create the account. Please try again.';
+    if (err == 'exists') return 'exists';
+    if (err == 'stageName') return 'stageName';
+    return 'createFailed';
+  }
+
+  /// The server rejected the session (401): drop the signed-in state so
+  /// the app falls back to guest instead of showing a logged-in profile
+  /// while every server call fails.
+  void handleSessionExpired() {
+    user = null;
+    favoriteIds = {};
+    likedIds = {};
+    likedSongs = [];
+    playlists = [];
+    myFavorites = [];
+    notifyListeners();
   }
 
   Future<void> logout() async {
     try {
       await api.logout();
     } catch (_) {}
+    // The previous user's music and photo must not leak into the next
+    // account on the same phone: stop playback, drop the queue and the
+    // locally saved profile photo.
+    await player.stop();
+    queue = [];
+    queueIndex = -1;
+    await clearLocalProfilePhoto();
     user = null;
     favoriteIds = {};
     likedIds = {};
@@ -424,7 +463,7 @@ class AppState extends ChangeNotifier {
   bool isLiked(int songId) => likedIds.contains(songId);
 
   Future<void> toggleFavorite(Song song) async {
-    if (user == null) throw const ApiException('Please log in first.');
+    if (user == null) throw const ApiException('login-required');
     final wasFav = favoriteIds.contains(song.id);
     if (wasFav) {
       favoriteIds.remove(song.id);
@@ -453,7 +492,7 @@ class AppState extends ChangeNotifier {
   }
 
   Future<void> toggleLike(Song song) async {
-    if (user == null) throw const ApiException('Please log in first.');
+    if (user == null) throw const ApiException('login-required');
     final wasLiked = likedIds.contains(song.id);
     if (wasLiked) {
       likedIds.remove(song.id);
@@ -486,7 +525,9 @@ class AppState extends ChangeNotifier {
   Future<void> playSong(Song song, {List<Song>? fromQueue}) async {
     if (!_playerReady) return;
     await _ensureNotificationPermissionOnce();
-    final q = fromQueue ?? [song];
+    // Copy: the caller's list (e.g. the home screen's song list) must
+    // never be mutated by inserting the tapped song into it.
+    final q = List<Song>.from(fromQueue ?? [song]);
     var idx = q.indexWhere((s) => s.id == song.id);
     if (idx < 0) {
       q.insert(0, song);
@@ -600,14 +641,13 @@ class AppState extends ChangeNotifier {
     final sources = playable
         .map((s) => AudioSource.uri(_audioUriFor(s)!, tag: _mediaItemFor(s)))
         .toList();
-    final offset = queue.indexWhere(
-        (s) => s.audioUrl.isNotEmpty || (s.localPath ?? '').isNotEmpty);
-    _playableOffset = offset < 0 ? 0 : offset;
-    final start = startIndex - offset;
+    _playableIndices = playable.map((s) => queue.indexOf(s)).toList();
+    var start = _playableIndices.indexOf(startIndex);
+    if (start < 0) start = 0;
     try {
       await player.setAudioSource(
         ConcatenatingAudioSource(children: sources),
-        initialIndex: start < 0 ? 0 : start,
+        initialIndex: start,
         initialPosition: Duration.zero,
       );
       await player.play();
@@ -646,7 +686,7 @@ class AppState extends ChangeNotifier {
         );
         await player.play();
         queueIndex = idx;
-        _playableOffset = idx;
+        _playableIndices = [idx];
         _queueSourceIsSingle = true;
         playbackError = 'skipped';
         notifyListeners();
@@ -671,7 +711,13 @@ class AppState extends ChangeNotifier {
   }
 
   Future<void> playNext() async {
-    if (queueIndex + 1 >= queue.length) return;
+    if (queueIndex + 1 >= queue.length) {
+      // Loop-all wraps to the start, on the button and on auto-advance.
+      if (loopMode == LoopMode.all && queue.isNotEmpty) {
+        await _loadQueueAndPlay(0);
+      }
+      return;
+    }
     if (_queueSourceIsSingle) {
       // No concatenating source to seek inside: load the next song, which
       // re-tries the full queue and falls back to single again if needed.
@@ -740,9 +786,10 @@ class AppState extends ChangeNotifier {
   Future<void> _onTrackCompleted() async {
     await _savePosition();
     if (loopMode == LoopMode.one) return;
-    if (queueIndex + 1 < queue.length) {
-      await player.seekToNext();
-    }
+    // Route through playNext: it seeks inside a concatenating source,
+    // but reloads explicitly when the source is a single song (after a
+    // skip-fallback) — a plain seekToNext there does nothing.
+    await playNext();
   }
 
   Future<void> _savePosition() async {

@@ -131,7 +131,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get appName => 'SoundBlast';
 
   @override
-  String get appVersionLabel => 'Version 1.0.0 — Android app';
+  String get appVersionLabel => 'Version 1.0.18 — Android app';
 
   @override
   String get archive => 'Archive';
@@ -1780,4 +1780,42 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get yourMessage => 'Your message';
+
+  @override
+  String get authInvalidCredentials => 'Invalid email or password.';
+
+  @override
+  String get accountSuspended => 'This account is suspended. Contact SoundBlast support.';
+
+  @override
+  String get accountExists => 'An account with this email already exists.';
+
+  @override
+  String get createAccountFailed => 'Could not create the account. Please try again.';
+
+  @override
+  String get somethingWentWrong => 'Something went wrong. Please try again.';
+
+  @override
+  String get playlistCreated => 'Playlist created.';
+
+  @override
+  String get playlistPrivateOrGone => 'This playlist is private or no longer exists.';
+
+  @override
+  String get playlist => 'Playlist';
+
+  @override
+  String appVersion(String version) {
+    return 'Version $version — Android app';
+  }
+
+  @override
+  String get all => 'All';
+
+  @override
+  String get album => 'Album';
+
+  @override
+  String get artist => 'Artist';
 }

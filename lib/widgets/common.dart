@@ -5,12 +5,27 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../api/models.dart';
+import '../api/trpc_client.dart';
 import '../state/app_state.dart';
 import '../l10n/app_localizations.dart';
 
 /// Shorthand for the current language's strings: `context.l10n.home`.
 extension L10n on BuildContext {
   AppLocalizations get l10n => AppLocalizations.of(this)!;
+}
+
+/// User-facing error text: an ApiException already carries a localized
+/// message; anything else becomes the generic localized message — the raw
+/// technical detail is only logged, never shown to the user.
+String friendlyError(Object e, AppLocalizations l10n) {
+  if (e is ApiException) {
+    // A code, not a message: the like/favorite guards throw it when the
+    // user is signed out.
+    if (e.message == 'login-required') return l10n.loginFirst;
+    return e.message;
+  }
+  debugPrint('SoundBlast error: $e');
+  return l10n.somethingWentWrong;
 }
 
 /// SoundBlast dark theme — read exactly from the website
@@ -238,12 +253,17 @@ class CoverImage extends StatelessWidget {
         child: Icon(fallbackIcon, color: SbColors.muted, size: size * 0.45),
       );
     }
-    // On-device cover art is cached as a local file path, not a URL.
-    if (url!.startsWith('/')) {
+    // A server-relative path (/manus-storage/…) is a website asset, not a
+    // file on this phone: resolve it against the site origin first. Any
+    // other '/'-path is on-device cover art cached as a local file.
+    final effectiveUrl = url!.startsWith('/manus-storage/')
+        ? '${TrpcClient.baseUrl}$url'
+        : url!;
+    if (effectiveUrl.startsWith('/')) {
       return ClipRRect(
         borderRadius: BorderRadius.circular(radius),
         child: Image.file(
-          File(url!),
+          File(effectiveUrl),
           width: size,
           height: size,
           fit: BoxFit.cover,
@@ -259,7 +279,7 @@ class CoverImage extends StatelessWidget {
     return ClipRRect(
       borderRadius: BorderRadius.circular(radius),
       child: CachedNetworkImage(
-        imageUrl: url!,
+        imageUrl: effectiveUrl,
         width: size,
         height: size,
         fit: BoxFit.cover,

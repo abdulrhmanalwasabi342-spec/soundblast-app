@@ -118,7 +118,7 @@ class _HomeScreenState extends State<HomeScreen> {
           _scheduleCacheRetry();
         } else {
           setState(() {
-            _error = e.toString();
+            _error = friendlyError(e, context.l10n);
             _loading = false;
           });
         }
@@ -195,7 +195,7 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
           IconButton(
             icon: const Icon(Icons.upload_outlined),
-            tooltip: 'Upload a song',
+            tooltip: context.l10n.uploadSong,
             onPressed: () => Navigator.of(context).pushNamed('/upload'),
           ),
         ],
@@ -645,14 +645,14 @@ class _HomeScreenState extends State<HomeScreen> {
                           onTap: () async {
                             if (state.user == null) {
                               showSnack(context,
-                                  'Log in to like songs.');
+                                  context.l10n.loginToLike);
                               return;
                             }
                             try {
                               await state.toggleLike(s);
                             } catch (e) {
                               if (context.mounted) {
-                                showSnack(context, e.toString());
+                                showSnack(context, friendlyError(e, context.l10n));
                               }
                             }
                           },
@@ -752,8 +752,10 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        '${formatCount(s.playCount)} plays'
-                        '${s.likeCount > 0 ? ' • ${formatCount(s.likeCount)} likes' : ''}',
+                        context.l10n.playsCount(formatCount(s.playCount)) +
+                            (s.likeCount > 0
+                                ? ' • ${context.l10n.likesCount(formatCount(s.likeCount))}'
+                                : ''),
                         style: const TextStyle(
                             color: Colors.white38, fontSize: 11),
                       ),
@@ -1133,32 +1135,32 @@ class SongActions extends StatelessWidget {
         IconButton(
           icon: Icon(liked ? Icons.favorite : Icons.favorite_border,
               color: liked ? SbColors.accent : SbColors.muted, size: 20),
-          tooltip: liked ? 'Unlike' : 'Like',
+          tooltip: liked ? context.l10n.unlikeAction : context.l10n.likeAction,
           onPressed: () async {
             if (state.user == null) {
-              showSnack(context, 'Log in to like songs.');
+              showSnack(context, context.l10n.loginToLike);
               return;
             }
             try {
               await state.toggleLike(song);
             } catch (e) {
-              if (context.mounted) showSnack(context, e.toString());
+              if (context.mounted) showSnack(context, friendlyError(e, context.l10n));
             }
           },
         ),
         IconButton(
           icon: Icon(fav ? Icons.bookmark : Icons.bookmark_border,
               color: fav ? SbColors.accent : SbColors.muted, size: 20),
-          tooltip: fav ? 'Remove from favorites' : 'Save to favorites',
+          tooltip: fav ? context.l10n.removeFromFavorites : context.l10n.saveToFavorites,
           onPressed: () async {
             if (state.user == null) {
-              showSnack(context, 'Log in to save favorites.');
+              showSnack(context, context.l10n.loginToSaveFavorites);
               return;
             }
             try {
               await state.toggleFavorite(song);
             } catch (e) {
-              if (context.mounted) showSnack(context, e.toString());
+              if (context.mounted) showSnack(context, friendlyError(e, context.l10n));
             }
           },
         ),
@@ -1191,8 +1193,12 @@ class SongActions extends StatelessWidget {
               title: Text(context.l10n.playNext),
               onTap: () {
                 Navigator.of(ctx).pop();
-                state.playSong(song,
-                    fromQueue: [song, ...state.queue]);
+                state.playSong(song, fromQueue: [
+                  song,
+                  // Already in the queue? Move it up front instead of
+                  // playing it twice.
+                  ...state.queue.where((s) => s.id != song.id)
+                ]);
               },
             ),
             ListTile(
@@ -1225,10 +1231,10 @@ class SongActions extends StatelessWidget {
                   await state.downloads.download(song);
                   if (context.mounted) {
                     showSnack(context,
-                        'Downloaded — available offline in Library → Downloaded.');
+                        context.l10n.downloadedAvailableOffline);
                   }
                 } catch (e) {
-                  if (context.mounted) showSnack(context, e.toString());
+                  if (context.mounted) showSnack(context, friendlyError(e, context.l10n));
                 }
               },
             ),
@@ -1250,11 +1256,11 @@ class SongActions extends StatelessWidget {
   void _showAddToPlaylist(
       BuildContext context, AppState state, Song song) {
     if (state.user == null) {
-      showSnack(context, 'Log in to use playlists.');
+      showSnack(context, context.l10n.loginToUsePlaylists);
       return;
     }
     if (state.playlists.isEmpty) {
-      showSnack(context, 'No playlists yet — create one first.');
+      showSnack(context, context.l10n.noPlaylistsCreateFirst);
       Navigator.of(context).pushNamed('/playlists/create');
       return;
     }
@@ -1280,10 +1286,10 @@ class SongActions extends StatelessWidget {
                     try {
                       await state.api.addSongToPlaylist(p.id, song.id);
                       if (context.mounted) {
-                        showSnack(context, 'Added to ${p.name}.');
+                        showSnack(context, context.l10n.addedToName(p.name));
                       }
                     } catch (e) {
-                      if (context.mounted) showSnack(context, e.toString());
+                      if (context.mounted) showSnack(context, friendlyError(e, context.l10n));
                     }
                   },
                 )),
@@ -1308,7 +1314,10 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
   List<ArtistProfile> _artists = [];
   bool _loading = true;
   String? _error;
-  String _genreFilter = 'All';
+  // null = all genres (a localized label must never be the filter
+  // sentinel: in Arabic the 'All' chip reads 'الكل' and the old
+  // `== 'All'` check then matched nothing).
+  String? _genreFilter;
 
   @override
   void initState() {
@@ -1338,15 +1347,18 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _error = e.toString();
+        _error = friendlyError(e, context.l10n);
         _loading = false;
       });
     }
   }
 
-  List<Song> get _visible => _genreFilter == 'All'
+  List<Song> get _visible => _genreFilter == null
       ? _songs
-      : _songs.where((s) => s.genre == _genreFilter).toList();
+      : _songs
+          .where((s) =>
+              s.genre.toLowerCase() == _genreFilter!.toLowerCase())
+          .toList();
 
   @override
   Widget build(BuildContext context) {
@@ -1371,8 +1383,8 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
                             padding:
                                 const EdgeInsets.symmetric(horizontal: 12),
                             children: [
-                              _chip('All'),
-                              ..._genres.map(_chip),
+                              _chip(context.l10n.all),
+                              ..._genres.map((g) => _chip(g, g)),
                             ],
                           ),
                         ),
@@ -1424,8 +1436,8 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
     );
   }
 
-  Widget _chip(String label) {
-    final selected = _genreFilter == label;
+  Widget _chip(String label, [String? value]) {
+    final selected = _genreFilter == value;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
       child: ChoiceChip(
@@ -1435,7 +1447,7 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
         backgroundColor: SbColors.surface2,
         labelStyle: TextStyle(
             color: selected ? Colors.white : SbColors.text),
-        onSelected: (_) => setState(() => _genreFilter = label),
+        onSelected: (_) => setState(() => _genreFilter = value),
       ),
     );
   }
@@ -1477,7 +1489,7 @@ class _TrendingScreenState extends State<TrendingScreen> {
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _error = e.toString();
+        _error = friendlyError(e, context.l10n);
         _loading = false;
       });
     }
@@ -1503,10 +1515,10 @@ class _TrendingScreenState extends State<TrendingScreen> {
                       onRefresh: _load,
                       child: ListView(
                         children: [
-                          const Padding(
-                            padding: EdgeInsets.fromLTRB(16, 8, 16, 4),
+                          Padding(
+                            padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
                             child: Text(
-                              'Most played in the last 7 days',
+                              context.l10n.mostPlayed7Days,
                               style: TextStyle(color: SbColors.muted),
                             ),
                           ),

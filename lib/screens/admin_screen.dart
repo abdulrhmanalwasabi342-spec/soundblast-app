@@ -54,7 +54,7 @@ class _AdminScreenState extends State<AdminScreen>
   List<dynamic> _oauthUsers = [];
   Map<String, dynamic>? _integrity;
   bool _loading = true;
-  bool _loadedTab = false;
+  final Set<int> _loadedTabs = {};
   String? _error;
 
   @override
@@ -99,14 +99,14 @@ class _AdminScreenState extends State<AdminScreen>
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _error = e.toString();
+        _error = friendlyError(e, context.l10n);
         _loading = false;
       });
     }
   }
 
-  Future<void> _loadTab(int index) async {
-    if (_loadedTab && index != 5) return;
+  Future<void> _loadTab(int index, {bool force = false}) async {
+    if (!force && _loadedTabs.contains(index) && index != 5) return;
     try {
       switch (index) {
         case 2: // Content
@@ -158,9 +158,9 @@ class _AdminScreenState extends State<AdminScreen>
             _oauthUsers = results[1] as List<dynamic>;
           });
       }
-      _loadedTab = true;
+      _loadedTabs.add(index);
     } catch (e) {
-      if (mounted) showSnack(context, e.toString());
+      if (mounted) showSnack(context, friendlyError(e, context.l10n));
     }
   }
 
@@ -232,9 +232,9 @@ class _AdminScreenState extends State<AdminScreen>
     try {
       await fn();
       await _load();
-      await _loadTab(_tab.index);
+      await _loadTab(_tab.index, force: true);
     } catch (e) {
-      if (mounted) showSnack(context, e.toString());
+      if (mounted) showSnack(context, friendlyError(e, context.l10n));
     }
   }
 
@@ -578,7 +578,7 @@ class _AdminScreenState extends State<AdminScreen>
   // ---- Content ----------------------------------------------------------------
   Widget _contentTab(BuildContext context) {
     return RefreshIndicator(
-      onRefresh: () => _loadTab(2),
+      onRefresh: () => _loadTab(2, force: true),
       child: ListView(
         padding: const EdgeInsets.all(16),
         children: [
@@ -779,7 +779,7 @@ class _AdminScreenState extends State<AdminScreen>
   // ---- Artists ---------------------------------------------------------------
   Widget _artistsTab(BuildContext context) {
     return RefreshIndicator(
-      onRefresh: () => _loadTab(3),
+      onRefresh: () => _loadTab(3, force: true),
       child: ListView(
         padding: const EdgeInsets.all(16),
         children: [
@@ -987,7 +987,7 @@ class _AdminScreenState extends State<AdminScreen>
   // ---- Analytics ----------------------------------------------------------------
   Widget _analyticsTab(BuildContext context) {
     return RefreshIndicator(
-      onRefresh: () => _loadTab(5),
+      onRefresh: () => _loadTab(5, force: true),
       child: ListView(
         padding: const EdgeInsets.all(16),
         children: [
@@ -1082,7 +1082,7 @@ class _AdminScreenState extends State<AdminScreen>
   // ---- System & safety -----------------------------------------------------------
   Widget _systemTab(BuildContext context) {
     return RefreshIndicator(
-      onRefresh: () => _loadTab(6),
+      onRefresh: () => _loadTab(6, force: true),
       child: ListView(
         padding: const EdgeInsets.all(16),
         children: [
@@ -1095,40 +1095,67 @@ class _AdminScreenState extends State<AdminScreen>
             children: [
               ElevatedButton(
                 onPressed: () async {
-                  final res =
-                      await _api.adminCleanupLibraryIntegrity();
-                  if (mounted) {
-                    showSnack(context, context.l10n.libraryCleanupDone('$res'));
+                  try {
+                    final res =
+                        await _api.adminCleanupLibraryIntegrity();
+                    if (mounted) {
+                      showSnack(context, context.l10n.libraryCleanupDone('$res'));
+                    }
+                    await _loadTab(5, force: true);
+                  } catch (e) {
+                    if (mounted) {
+                      showSnack(context, friendlyError(e, context.l10n));
+                    }
                   }
-                  await _loadTab(5);
                 },
                 child: Text(context.l10n.cleanLibraryIntegrity),
               ),
               OutlinedButton(
                 onPressed: () async {
-                  final res =
-                      await _api.adminReconcileSongSizes(limit: 5);
-                  if (mounted) {
-                    showSnack(context, context.l10n.reconciledSizes('$res'));
+                  try {
+                    final res =
+                        await _api.adminReconcileSongSizes(limit: 5);
+                    if (mounted) {
+                      showSnack(context, context.l10n.reconciledSizes('$res'));
+                    }
+                    await _loadTab(5, force: true);
+                  } catch (e) {
+                    if (mounted) {
+                      showSnack(context, friendlyError(e, context.l10n));
+                    }
                   }
                 },
                 child: Text(context.l10n.reconcileSongSizes),
               ),
               OutlinedButton(
                 onPressed: () async {
-                  final res = await _api.adminRollupPlayEvents();
-                  if (mounted) {
-                    showSnack(context, context.l10n.playEventsRolledUp('$res'));
+                  try {
+                    final res = await _api.adminRollupPlayEvents();
+                    if (mounted) {
+                      showSnack(context, context.l10n.playEventsRolledUp('$res'));
+                    }
+                    await _loadTab(5, force: true);
+                  } catch (e) {
+                    if (mounted) {
+                      showSnack(context, friendlyError(e, context.l10n));
+                    }
                   }
                 },
                 child: Text(context.l10n.rollUpPlayEvents),
               ),
               OutlinedButton(
                 onPressed: () async {
-                  final res =
-                      await _api.adminRecompressLegacyBatch(limit: 3);
-                  if (mounted) {
-                    showSnack(context, context.l10n.recompressedBatch('$res'));
+                  try {
+                    final res =
+                        await _api.adminRecompressLegacyBatch(limit: 3);
+                    if (mounted) {
+                      showSnack(context, context.l10n.recompressedBatch('$res'));
+                    }
+                    await _loadTab(5, force: true);
+                  } catch (e) {
+                    if (mounted) {
+                      showSnack(context, friendlyError(e, context.l10n));
+                    }
                   }
                 },
                 child: Text(context.l10n.recompressLegacyAudio),
@@ -1256,7 +1283,7 @@ class _AdminScreenState extends State<AdminScreen>
             await fn();
             await _load();
           } catch (e) {
-            if (mounted) showSnack(context, e.toString());
+            if (mounted) showSnack(context, friendlyError(e, context.l10n));
           }
         }
       },

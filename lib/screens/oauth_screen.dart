@@ -1,4 +1,3 @@
-import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -67,26 +66,18 @@ class _GitHubOAuthScreenState extends State<GitHubOAuthScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) => _start());
   }
 
-  /// The start URL must 302 to github.com — anything else (Render's
-  /// placeholder page while the server restarts, a 503, a timeout) means
-  /// the window would not show GitHub.
+  /// The start URL must end at GitHub's sign-in page — anything else
+  /// (Render's placeholder page while the server restarts, a 503, a
+  /// timeout) means the window would not show GitHub. Checked through
+  /// the app's (Cronet) transport, like every other server call, not a
+  /// raw socket client.
   Future<bool> _serverUp() async {
-    final client = HttpClient();
-    client.connectionTimeout = const Duration(seconds: 70);
-    try {
-      final request =
-          await client.getUrl(Uri.parse('$_site/api/auth/github'));
-      request.followRedirects = false;
-      final response =
-          await request.close().timeout(const Duration(seconds: 70));
-      await response.drain<void>();
-      final location = response.headers.value('location') ?? '';
-      return response.statusCode == 302 && location.contains('github.com');
-    } catch (_) {
-      return false;
-    } finally {
-      client.close();
-    }
+    final status = await context
+        .read<AppState>()
+        .api
+        .client
+        .getStatus('/api/auth/github');
+    return status == 200;
   }
 
   Future<void> _start() async {
@@ -176,7 +167,7 @@ class _GitHubOAuthScreenState extends State<GitHubOAuthScreen> {
       if (mounted) {
         setState(() {
           _checking = false;
-          _note = e.toString();
+          _note = friendlyError(e, context.l10n);
         });
       }
     }

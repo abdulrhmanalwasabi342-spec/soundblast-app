@@ -18,7 +18,7 @@ class DrawerMenuButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return IconButton(
       icon: const Icon(Icons.menu),
-      tooltip: 'Menu',
+      tooltip: context.l10n.menu,
       onPressed: () => appShellScaffoldKey.currentState?.openDrawer(),
     );
   }

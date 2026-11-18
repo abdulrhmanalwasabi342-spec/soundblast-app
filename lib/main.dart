@@ -19,18 +19,18 @@ import 'widgets/common.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
-  final appState = AppState();
-  // Show the UI immediately: the old code awaited the audio service and a
-  // network login check (api.me(), up to 60s against the sleeping Render
-  // backend) BEFORE runApp, so the app opened on a black screen until the
-  // server answered. Now the first frame renders at once (a spinner until
-  // authChecked) and the heavy init runs in the background.
-  runApp(
-    ChangeNotifierProvider.value(
-      value: appState,
-      child: const SoundBlastApp(),
-    ),
-  );
+  // First frame at once (a spinner) so a slow start can never leave a
+  // black screen — then the background audio service is started BEFORE
+  // any AudioPlayer exists. just_audio_background swaps the platform
+  // instance inside init(); a player created earlier keeps the plain
+  // instance forever, so background playback and the media notification
+  // could never work. Only after init runs is AppState (and its player)
+  // created; the network login check still runs in the background.
+  runApp(MaterialApp(
+    debugShowCheckedModeBanner: false,
+    theme: ThemeData.dark(),
+    home: const Scaffold(body: Center(child: CircularProgressIndicator())),
+  ));
   Future(() async {
     try {
       await JustAudioBackground.init(
@@ -38,10 +38,18 @@ void main() {
         androidNotificationChannelName: 'SoundBlast playback',
         androidNotificationOngoing: true,
         androidNotificationIcon: 'mipmap/ic_launcher',
-      ).timeout(const Duration(seconds: 15));
+      ).timeout(const Duration(seconds: 10));
     } catch (_) {
-      // Audio service init must never block the UI; playback retries later.
+      // The service is optional: without it playback still works in the
+      // foreground; it just cannot continue after the app closes.
     }
+    final appState = AppState();
+    runApp(
+      ChangeNotifierProvider.value(
+        value: appState,
+        child: const SoundBlastApp(),
+      ),
+    );
     await appState.init();
   });
 }
@@ -107,7 +115,7 @@ class SoundBlastApp extends StatelessWidget {
         case 'playlists':
           page = const PlaylistsScreen();
         case 'favorites':
-          page = const LibraryScreen();
+          page = const LibraryScreen(initialTab: 1);
         case 'liked':
           page = const LibraryScreen(initialTab: 0);
         case 'search':

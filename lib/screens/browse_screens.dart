@@ -48,7 +48,7 @@ class _GenresScreenState extends State<GenresScreen> {
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _error = e.toString();
+        _error = friendlyError(e, context.l10n);
         _loading = false;
       });
     }
@@ -88,7 +88,7 @@ class _GenresScreenState extends State<GenresScreen> {
                                       style: const TextStyle(
                                           fontWeight: FontWeight.w600)),
                                   subtitle: Text(
-                                      '${_counts[g] ?? 0} song${(_counts[g] ?? 0) == 1 ? '' : 's'}'),
+                                      context.l10n.songsCount(_counts[g] ?? 0)),
                                   trailing:
                                       const Icon(Icons.chevron_right),
                                   onTap: () => Navigator.of(context).pushNamed(
@@ -137,7 +137,7 @@ class _GenreDetailsScreenState extends State<GenreDetailsScreen> {
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _error = e.toString();
+        _error = friendlyError(e, context.l10n);
         _loading = false;
       });
     }
@@ -179,7 +179,7 @@ class _GenreDetailsScreenState extends State<GenreDetailsScreen> {
                                         fontSize: 24,
                                         fontWeight: FontWeight.w800)),
                                 Text(
-                                    '${_songs.length} song${_songs.length == 1 ? '' : 's'}',
+                                    context.l10n.songsCount(_songs.length),
                                     style: const TextStyle(
                                         color: SbColors.muted)),
                               ],
@@ -265,7 +265,7 @@ class _AlbumsScreenState extends State<AlbumsScreen> {
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _error = e.toString();
+        _error = friendlyError(e, context.l10n);
         _loading = false;
       });
     }
@@ -328,7 +328,7 @@ class _AlbumsScreenState extends State<AlbumsScreen> {
                                     if (a.artistName != null) a.artistName!,
                                     if (a.releaseType != null) a.releaseType!,
                                     if (a.songCount > 0)
-                                      '${a.songCount} songs',
+                                      context.l10n.songsCount(a.songCount),
                                   ].join(' • '),
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
@@ -397,7 +397,7 @@ class _AlbumDetailsScreenState extends State<AlbumDetailsScreen> {
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _error = e.toString();
+        _error = friendlyError(e, context.l10n);
         _loading = false;
       });
     }
@@ -407,7 +407,7 @@ class _AlbumDetailsScreenState extends State<AlbumDetailsScreen> {
   Widget build(BuildContext context) {
     final state = context.watch<AppState>();
     return Scaffold(
-      appBar: AppBar(title: Text(_album?.title ?? 'Album')),
+      appBar: AppBar(title: Text(_album?.title ?? context.l10n.album)),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : _error != null
@@ -447,7 +447,7 @@ class _AlbumDetailsScreenState extends State<AlbumDetailsScreen> {
                                           _album!.artistName!,
                                         if (_album!.releaseType != null)
                                           _album!.releaseType!,
-                                        '${_songs.length} songs',
+                                        context.l10n.songsCount(_songs.length),
                                       ].join(' • '),
                                       style: const TextStyle(
                                           color: SbColors.muted),
@@ -542,7 +542,7 @@ class _ArtistsScreenState extends State<ArtistsScreen> {
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _error = e.toString();
+        _error = friendlyError(e, context.l10n);
         _loading = false;
       });
     }
@@ -654,7 +654,7 @@ class _ArtistPageScreenState extends State<ArtistPageScreen> {
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _error = e.toString();
+        _error = friendlyError(e, context.l10n);
         _loading = false;
       });
     }
@@ -686,7 +686,7 @@ class _ArtistPageScreenState extends State<ArtistPageScreen> {
         });
       }
     } catch (e) {
-      if (mounted) showSnack(context, e.toString());
+      if (mounted) showSnack(context, friendlyError(e, context.l10n));
     }
   }
 
@@ -895,7 +895,7 @@ class _ArtistPostsScreenState extends State<ArtistPostsScreen> {
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _error = e.toString();
+        _error = friendlyError(e, context.l10n);
         _loading = false;
       });
     }
@@ -931,7 +931,7 @@ class _ArtistPostsScreenState extends State<ArtistPostsScreen> {
                                         url: p.imageUrl,
                                         size: 48,
                                         fallbackIcon: Icons.person),
-                                    title: Text(p.stageName ?? 'Artist'),
+                                    title: Text(p.stageName ?? context.l10n.artist),
                                     subtitle: Text(p.body),
                                     onTap: () {
                                       if (p.artistLocalUserId > 0) {
@@ -985,7 +985,7 @@ class _GalleryScreenState extends State<GalleryScreen> {
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _error = e.toString();
+        _error = friendlyError(e, context.l10n);
         _loading = false;
       });
     }

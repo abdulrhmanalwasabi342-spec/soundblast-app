@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:io' show Platform;
 
 import 'package:cronet_http/cronet_http.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
 
@@ -33,6 +34,10 @@ class ApiException implements Exception {
 }
 
 class TrpcClient {
+  /// Called when the server rejects the session (401) so AppState can
+  /// drop the signed-in user instead of leaving a zombie logged-in state.
+  void Function()? onSessionExpired;
+
   static const String baseUrl = 'https://soundblast.onrender.com';
   static const _sessionCookieNames = {
     'app_session_id',
@@ -47,6 +52,11 @@ class TrpcClient {
   TrpcClient({http.Client? httpClient, FlutterSecureStorage? storage})
       : _http = httpClient ?? _defaultHttpClient(),
         _storage = storage ?? const FlutterSecureStorage();
+
+  /// A fresh client on the same transport (a new Cronet engine each time):
+  /// used for downloads, which close their client when done — the shared
+  /// client must never be closed.
+  static http.Client newClient() => _defaultHttpClient();
 
   /// The transport for every server call. On Android the app talks through
   /// Chromium's network stack (Cronet) — the same stack the phone's browser
@@ -141,17 +151,19 @@ class TrpcClient {
       decoded = jsonDecode(res.body);
     } on FormatException {
       throw ApiException(
-        'Server returned an unreadable response (${res.statusCode}) for $path',
+        'The server returned an unreadable response. Please try again later.',
         httpStatus: res.statusCode,
       );
     }
     if (decoded is! List || decoded.isEmpty) {
-      throw ApiException('Unexpected server response for $path',
+      throw ApiException(
+          'Unexpected server response. Please try again later.',
           httpStatus: res.statusCode);
     }
     final first = decoded[0];
     if (first is! Map) {
-      throw ApiException('Unexpected server response for $path',
+      throw ApiException(
+          'Unexpected server response. Please try again later.',
           httpStatus: res.statusCode);
     }
     if (first.containsKey('error')) {
@@ -188,8 +200,25 @@ class TrpcClient {
     if (msg.startsWith('Failed query:')) {
       return 'The server database returned an error. Please try again later.';
     }
-    if (msg.contains('Invalid input')) return 'Invalid input: $msg';
+    if (msg.contains('Invalid input')) {
+      return 'Some details were invalid. Please check them and try again.';
+    }
     return msg;
+  }
+
+  /// Raw GET status through the same (Cronet) transport, following
+  /// redirects: the OAuth pre-flights use it instead of a raw dart:io
+  /// client, so they work on the networks where the browser works.
+  /// Returns the final HTTP status, or null when unreachable.
+  Future<int?> getStatus(String path) async {
+    try {
+      final res = await _http
+          .get(Uri.parse('$baseUrl$path'), headers: _headers)
+          .timeout(const Duration(seconds: 60));
+      return res.statusCode;
+    } catch (_) {
+      return null;
+    }
   }
 
   /// GET query. Pass `input: null` for procedures without input.
@@ -207,13 +236,18 @@ class TrpcClient {
           .get(uri, headers: _headers)
           .timeout(const Duration(seconds: 180));
     } catch (e) {
-      throw ApiException(
-          'Could not reach SoundBlast. Check your connection and try again. ($e)');
+      debugPrint('SoundBlast request failed: $e');
+      throw const ApiException(
+          'Could not reach SoundBlast. Check your connection and try again.');
     }
     _storeCookieFromHeaders(res.headers);
     if (res.statusCode == 401 || res.statusCode == 403) {
-      // Session expired/invalid — clear so the app falls back to guest.
-      if (res.statusCode == 401) await clearSession();
+      // Session expired/invalid — clear so the app falls back to guest,
+      // and tell AppState to drop the signed-in user too.
+      if (res.statusCode == 401) {
+        await clearSession();
+        onSessionExpired?.call();
+      }
     }
     return _unwrap(res, path);
   }
@@ -230,10 +264,15 @@ class TrpcClient {
           .post(uri, headers: _headers, body: body)
           .timeout(const Duration(seconds: 180));
     } catch (e) {
-      throw ApiException(
-          'Could not reach SoundBlast. Check your connection and try again. ($e)');
+      debugPrint('SoundBlast request failed: $e');
+      throw const ApiException(
+          'Could not reach SoundBlast. Check your connection and try again.');
     }
     _storeCookieFromHeaders(res.headers);
+    if (res.statusCode == 401) {
+      await clearSession();
+      onSessionExpired?.call();
+    }
     return _unwrap(res, path);
   }
 

@@ -109,6 +109,11 @@ class DownloadManager {
   final Map<int, DownloadProgress> progress = {};
   final List<void Function()> _listeners = [];
 
+  /// Set by AppState: a fresh client on the app's (Cronet) transport, so
+  /// downloads work on the networks where the browser works. When unset,
+  /// downloads fall back to the plain client.
+  http.Client Function()? clientFactory;
+
   void addListener(void Function() fn) => _listeners.add(fn);
   void removeListener(void Function() fn) => _listeners.remove(fn);
   void _notify() {
@@ -184,10 +189,11 @@ class DownloadManager {
       if (!await dlDir.exists()) await dlDir.create(recursive: true);
       final file = File('${dlDir.path}/${_fileName(song)}');
 
-      final client = http.Client();
+      final client = clientFactory?.call() ?? http.Client();
       try {
         final request = http.Request('GET', Uri.parse(song.audioUrl));
-        final response = await client.send(request);
+        final response =
+            await client.send(request).timeout(const Duration(seconds: 180));
         if (response.statusCode != 200) {
           throw Exception(
               'Download failed (server returned ${response.statusCode}).');
@@ -195,7 +201,8 @@ class DownloadManager {
         final total = response.contentLength ?? -1;
         final sink = file.openWrite();
         var received = 0;
-        await for (final chunk in response.stream) {
+        await for (final chunk
+            in response.stream.timeout(const Duration(seconds: 60))) {
           received += chunk.length;
           sink.add(chunk);
           final p = total > 0 ? received / total : -1.0;

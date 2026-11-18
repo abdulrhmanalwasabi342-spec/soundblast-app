@@ -308,7 +308,7 @@ abstract class AppLocalizations {
   /// No description provided for @appVersionLabel.
   ///
   /// In en, this message translates to:
-  /// **'Version 1.0.0 — Android app'**
+  /// **'Version 1.0.18 — Android app'**
   String get appVersionLabel;
 
   /// No description provided for @archive.
@@ -3388,6 +3388,78 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Your message'**
   String get yourMessage;
+
+  /// No description provided for @authInvalidCredentials.
+  ///
+  /// In en, this message translates to:
+  /// **'Invalid email or password.'**
+  String get authInvalidCredentials;
+
+  /// No description provided for @accountSuspended.
+  ///
+  /// In en, this message translates to:
+  /// **'This account is suspended. Contact SoundBlast support.'**
+  String get accountSuspended;
+
+  /// No description provided for @accountExists.
+  ///
+  /// In en, this message translates to:
+  /// **'An account with this email already exists.'**
+  String get accountExists;
+
+  /// No description provided for @createAccountFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not create the account. Please try again.'**
+  String get createAccountFailed;
+
+  /// No description provided for @somethingWentWrong.
+  ///
+  /// In en, this message translates to:
+  /// **'Something went wrong. Please try again.'**
+  String get somethingWentWrong;
+
+  /// No description provided for @playlistCreated.
+  ///
+  /// In en, this message translates to:
+  /// **'Playlist created.'**
+  String get playlistCreated;
+
+  /// No description provided for @playlistPrivateOrGone.
+  ///
+  /// In en, this message translates to:
+  /// **'This playlist is private or no longer exists.'**
+  String get playlistPrivateOrGone;
+
+  /// No description provided for @playlist.
+  ///
+  /// In en, this message translates to:
+  /// **'Playlist'**
+  String get playlist;
+
+  /// No description provided for @appVersion.
+  ///
+  /// In en, this message translates to:
+  /// **'Version {version} — Android app'**
+  String appVersion(String version);
+
+  /// No description provided for @all.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get all;
+
+  /// No description provided for @album.
+  ///
+  /// In en, this message translates to:
+  /// **'Album'**
+  String get album;
+
+  /// No description provided for @artist.
+  ///
+  /// In en, this message translates to:
+  /// **'Artist'**
+  String get artist;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:just_audio/just_audio.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -319,7 +320,13 @@ class _UploadSongScreenState extends State<UploadSongScreen> {
     try {
       final genres = await state.api.genres();
       if (genres.isNotEmpty && mounted) {
-        setState(() => _genres = genres);
+        setState(() {
+          _genres = genres;
+          // The dropdown's initial value must be one of its items, or
+          // Flutter throws a red screen: 'Pop' is only the fallback when
+          // the server's genre list has no 'Pop' at all.
+          if (!_genres.contains(_genre)) _genre = _genres.first;
+        });
       }
     } catch (_) {}
     if (state.user?.isArtist == true) {
@@ -434,7 +441,7 @@ class _UploadSongScreenState extends State<UploadSongScreen> {
       if (msg.toLowerCase().contains('storage')) {
         showSnack(context, context.l10n.uploadStorageUnavailable);
       } else {
-        showSnack(context, msg);
+        showSnack(context, friendlyError(e, context.l10n));
       }
     } finally {
       if (mounted) {
@@ -615,7 +622,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _error = e.toString();
+        _error = friendlyError(e, context.l10n);
         _loading = false;
       });
     }
@@ -805,7 +812,7 @@ class _ArtistStudioScreenState extends State<ArtistStudioScreen> {
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _error = e.toString();
+        _error = friendlyError(e, context.l10n);
         _loading = false;
       });
     }
@@ -922,7 +929,7 @@ class _ArtistStudioScreenState extends State<ArtistStudioScreen> {
                                             } catch (e) {
                                               if (mounted) {
                                                 showSnack(
-                                                    context, e.toString());
+                                                    context, friendlyError(e, context.l10n));
                                               }
                                             }
                                           }
@@ -1010,7 +1017,7 @@ class _ArtistStudioScreenState extends State<ArtistStudioScreen> {
                                       } catch (e) {
                                         if (mounted) {
                                           showSnack(
-                                              context, e.toString());
+                                              context, friendlyError(e, context.l10n));
                                         }
                                       }
                                     },
@@ -1050,7 +1057,7 @@ class _ArtistStudioScreenState extends State<ArtistStudioScreen> {
                                               } catch (e) {
                                                 if (mounted) {
                                                   showSnack(context,
-                                                      e.toString());
+                                                      friendlyError(e, context.l10n));
                                                 }
                                               }
                                             }
@@ -1128,7 +1135,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _error = e.toString();
+        _error = friendlyError(e, context.l10n);
         _loading = false;
       });
     }
@@ -1148,7 +1155,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                   await state.api.markAllNotificationsRead();
                   await _load();
                 } catch (e) {
-                  if (mounted) showSnack(context, e.toString());
+                  if (mounted) showSnack(context, friendlyError(e, context.l10n));
                 }
               },
               child: Text(context.l10n.markAllRead),
@@ -1210,7 +1217,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                                                 } catch (e) {
                                                   if (mounted) {
                                                     showSnack(context,
-                                                        e.toString());
+                                                        friendlyError(e, context.l10n));
                                                   }
                                                 }
                                               },
@@ -1270,7 +1277,7 @@ class _NotificationPreferencesScreenState
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _error = e.toString();
+        _error = friendlyError(e, context.l10n);
         _loading = false;
       });
     }
@@ -1342,6 +1349,10 @@ class _NotificationPreferencesScreenState
 class AboutScreen extends StatelessWidget {
   const AboutScreen({super.key});
 
+  // Fetched once: the real version of the installed package, so the
+  // About screen can never drift behind the releases again.
+  static final Future<PackageInfo> _info = PackageInfo.fromPlatform();
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -1362,9 +1373,17 @@ class AboutScreen extends StatelessWidget {
             style: TextStyle(color: SbColors.muted, fontSize: 15),
           ),
           SizedBox(height: 16),
-          Text(
-            context.l10n.appVersionLabel,
-            style: TextStyle(color: SbColors.muted, fontSize: 13),
+          FutureBuilder<PackageInfo>(
+            future: _info,
+            builder: (context, snap) {
+              final version = snap.data?.version;
+              return Text(
+                version == null
+                    ? context.l10n.appVersionLabel
+                    : context.l10n.appVersion(version),
+                style: const TextStyle(color: SbColors.muted, fontSize: 13),
+              );
+            },
           ),
         ],
       ),
@@ -1500,7 +1519,7 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
       showSnack(context, context.l10n.feedbackSentThanks);
       Navigator.of(context).pop();
     } catch (e) {
-      if (mounted) showSnack(context, e.toString());
+      if (mounted) showSnack(context, friendlyError(e, context.l10n));
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -1621,6 +1640,12 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     );
     if (result == null || result.files.isEmpty) return;
     final file = result.files.first;
+    if (file.bytes != null) {
+      // Save on this phone at pick time: the server upload may fail
+      // (storage is not configured), and the "saved locally" message is
+      // only true if the photo is actually stored here.
+      await context.read<AppState>().saveLocalProfilePhoto(file.bytes!);
+    }
     setState(() => _image = file);
   }
 
@@ -1675,7 +1700,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               : context.l10n.profileUpdated);
       Navigator.of(context).pop();
     } catch (e) {
-      if (mounted) showSnack(context, e.toString());
+      if (mounted) showSnack(context, friendlyError(e, context.l10n));
     } finally {
       if (mounted) setState(() => _saving = false);
     }

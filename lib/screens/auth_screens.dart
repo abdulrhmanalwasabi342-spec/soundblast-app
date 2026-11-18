@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:file_picker/file_picker.dart';
@@ -29,22 +28,13 @@ Future<void> signInWithGoogle(BuildContext context) async {
   final state = context.read<AppState>();
   final l10n = context.l10n;
   const startUrl = 'https://soundblast.onrender.com/api/auth/google?app=1';
-  bool up = false;
-  try {
-    final client = HttpClient();
-    client.connectionTimeout = const Duration(seconds: 30);
-    final request = await client.getUrl(Uri.parse(startUrl));
-    request.followRedirects = false;
-    final response =
-        await request.close().timeout(const Duration(seconds: 30));
-    await response.drain<void>();
-    final location = response.headers.value('location') ?? '';
-    up = response.statusCode == 302 &&
-        location.contains('accounts.google.com');
-    client.close();
-  } catch (_) {
-    up = false;
-  }
+  // Pre-flight through the app's (Cronet) transport, not a raw socket
+  // client: the start URL must end at Google's sign-in page. The server
+  // 503s while the Google keys are not set yet, so anything but a 200
+  // keeps the button honestly gated instead of opening a dead page.
+  final status =
+      await state.api.client.getStatus('/api/auth/google?app=1');
+  final up = status == 200;
   if (!context.mounted) return;
   if (!up) {
     showSnack(context, l10n.authGoogleNotSetup);
@@ -279,13 +269,19 @@ class _LoginScreenState extends State<LoginScreen> {
           _email.text.trim(), _password.text);
       if (!mounted) return;
       if (err != null) {
-        setState(() => _error = err);
+        // login() returns a code, not a message: map it to the localized
+        // string here so Arabic users never see English.
+        setState(() => _error = switch (err) {
+              'suspended' => context.l10n.accountSuspended,
+              'exists' => context.l10n.accountExists,
+              _ => context.l10n.authInvalidCredentials,
+            });
       } else {
         Navigator.of(context)
             .pushNamedAndRemoveUntil('/', (_) => false);
       }
     } catch (e) {
-      if (mounted) setState(() => _error = e.toString());
+      if (mounted) setState(() => _error = friendlyError(e, context.l10n));
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -546,13 +542,17 @@ class _SignupScreenState extends State<SignupScreen> {
       );
       if (!mounted) return;
       if (err != null) {
-        setState(() => _error = err);
+        setState(() => _error = switch (err) {
+              'exists' => context.l10n.accountExists,
+              'stageName' => context.l10n.authArtistNeedsStage,
+              _ => context.l10n.createAccountFailed,
+            });
       } else {
         Navigator.of(context)
             .pushNamedAndRemoveUntil('/', (_) => false);
       }
     } catch (e) {
-      if (mounted) setState(() => _error = e.toString());
+      if (mounted) setState(() => _error = friendlyError(e, context.l10n));
     } finally {
       if (mounted) setState(() => _busy = false);
     }

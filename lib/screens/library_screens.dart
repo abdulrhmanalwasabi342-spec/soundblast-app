@@ -59,7 +59,7 @@ class _SearchScreenState extends State<SearchScreen> {
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _error = e.toString();
+        _error = friendlyError(e, context.l10n);
         _searching = false;
       });
     }
@@ -235,7 +235,7 @@ class _SearchScreenState extends State<SearchScreen> {
                           icon: Icons.search_off,
                           title: context.l10n.noResults,
                           message:
-                              'Nothing matches "${_controller.text.trim()}" yet. Try a different song, artist or genre.',
+                              context.l10n.nothingMatchesQuery(_controller.text.trim()),
                         ),
                     ],
                   ),
@@ -261,10 +261,17 @@ class _LibraryScreenState extends State<LibraryScreen>
     with SingleTickerProviderStateMixin {
   late final TabController _tab;
 
+  // Cached once: recreating the permission future on every rebuild
+  // flickered the spinner, and the scan was re-scheduled on every build
+  // while the library was still loading.
+  Future<bool>? _mediaGrantedFuture;
+  bool _deviceScanRequested = false;
+
   @override
   void initState() {
     super.initState();
     _tab = TabController(length: 4, vsync: this, initialIndex: widget.initialTab);
+    _mediaGrantedFuture = PermissionFlow.isMediaGranted();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final state = context.read<AppState>();
       if (state.user != null) state.refreshLibrary();
@@ -299,21 +306,28 @@ class _LibraryScreenState extends State<LibraryScreen>
           ],
         ),
       ),
-      body: state.user == null
-          ? _loginPrompt(context)
-          : TabBarView(
-              controller: _tab,
-              children: [
-                _songList(state, state.likedSongs, Icons.favorite_border,
-                    context.l10n.noLikedSongsYet,
-                    context.l10n.tapHeartToKeep),
-                _songList(state, state.myFavorites, Icons.bookmark_border,
-                    context.l10n.noFavoritesYet,
-                    context.l10n.tapBookmarkToSave),
-                _playlistsTab(context, state),
-                _downloadedTab(context, state),
-              ],
-            ),
+      // Guests still get the Downloaded tab: downloads, on-device songs
+      // and offline playlists are device-local and need no account. Only
+      // the server tabs (Liked / Favorites / Playlists) ask for a login.
+      body: TabBarView(
+        controller: _tab,
+        children: [
+          state.user == null
+              ? _loginPrompt(context)
+              : _songList(state, state.likedSongs, Icons.favorite_border,
+                  context.l10n.noLikedSongsYet,
+                  context.l10n.tapHeartToKeep),
+          state.user == null
+              ? _loginPrompt(context)
+              : _songList(state, state.myFavorites, Icons.bookmark_border,
+                  context.l10n.noFavoritesYet,
+                  context.l10n.tapBookmarkToSave),
+          state.user == null
+              ? _loginPrompt(context)
+              : _playlistsTab(context, state),
+          _downloadedTab(context, state),
+        ],
+      ),
       floatingActionButton: state.user != null
           ? FloatingActionButton.extended(
               onPressed: () =>
@@ -408,7 +422,7 @@ class _LibraryScreenState extends State<LibraryScreen>
                   IconButton(
                     icon: const Icon(Icons.delete_outline,
                         color: SbColors.muted, size: 20),
-                    tooltip: 'Delete download',
+                    tooltip: context.l10n.deleteDownload,
                     onPressed: () async {
                       final ok = await confirmDialog(context,
                           title: context.l10n.deleteDownload,
@@ -499,7 +513,7 @@ class _LibraryScreenState extends State<LibraryScreen>
 
   Widget _onDeviceSection(BuildContext context, AppState state) {
     return FutureBuilder<bool>(
-      future: PermissionFlow.isMediaGranted(),
+      future: _mediaGrantedFuture,
       builder: (context, snap) {
         if (!snap.hasData) {
           return const Padding(
@@ -508,7 +522,8 @@ class _LibraryScreenState extends State<LibraryScreen>
           );
         }
         if (snap.data == true) {
-          if (!state.deviceSongsLoaded) {
+          if (!state.deviceSongsLoaded && !_deviceScanRequested) {
+            _deviceScanRequested = true;
             final l10n = context.l10n;
             WidgetsBinding.instance.addPostFrameCallback((_) {
               state.refreshDeviceSongs(
@@ -593,8 +608,8 @@ class _LibraryScreenState extends State<LibraryScreen>
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
-                'SoundBlast can play the songs already on this phone — even without internet.',
+              Text(
+                context.l10n.accessOffBody,
                 style: TextStyle(color: SbColors.muted),
               ),
               const SizedBox(height: 12),
@@ -666,7 +681,7 @@ class _LibraryScreenState extends State<LibraryScreen>
                         color: SbColors.accent),
                   ),
                   title: Text(p.name),
-                  subtitle: Text(p.description ?? 'Playlist'),
+                  subtitle: Text(p.description ?? context.l10n.playlist),
                   trailing: const Icon(Icons.chevron_right),
                   onTap: () => Navigator.of(context)
                       .pushNamed('/playlists/${p.id}'),
@@ -711,7 +726,7 @@ class _PlaylistsScreenState extends State<PlaylistsScreen> {
     } catch (e) {
       if (mounted) {
         setState(() {
-          _error = e.toString();
+          _error = friendlyError(e, context.l10n);
           _loading = false;
         });
       }
@@ -743,7 +758,7 @@ class _PlaylistsScreenState extends State<PlaylistsScreen> {
                           icon: Icons.playlist_play,
                           title: context.l10n.noPlaylists,
                           message:
-                              'Create your first playlist and add songs to it.',
+                              context.l10n.createFirstPlaylistHint,
                           action: ElevatedButton(
                             onPressed: () => Navigator.of(context)
                                 .pushNamed('/playlists/create'),
@@ -769,7 +784,7 @@ class _PlaylistsScreenState extends State<PlaylistsScreen> {
                                       ),
                                       title: Text(p.name),
                                       subtitle:
-                                          Text(p.description ?? 'Playlist'),
+                                          Text(p.description ?? context.l10n.playlist),
                                       trailing: const Icon(Icons.chevron_right),
                                       onTap: () => Navigator.of(context)
                                           .pushNamed('/playlists/${p.id}'),
@@ -830,11 +845,11 @@ class _CreatePlaylistScreenState extends State<CreatePlaylistScreen> {
   Future<void> _save() async {
     final state = context.read<AppState>();
     if (state.user == null) {
-      showSnack(context, 'Log in to create a playlist.');
+      showSnack(context, context.l10n.loginToCreatePlaylist);
       return;
     }
     if (_name.text.trim().isEmpty) {
-      showSnack(context, 'Give your playlist a name.');
+      showSnack(context, context.l10n.givePlaylistName);
       return;
     }
     setState(() => _saving = true);
@@ -848,14 +863,14 @@ class _CreatePlaylistScreenState extends State<CreatePlaylistScreen> {
       await state.refreshLibrary();
       if (!mounted) return;
       final id = res['id'];
-      showSnack(context, 'Playlist created.');
+      showSnack(context, context.l10n.playlistCreated);
       if (id != null) {
         Navigator.of(context).pushReplacementNamed('/playlists/$id');
       } else {
         Navigator.of(context).pop();
       }
     } catch (e) {
-      if (mounted) showSnack(context, e.toString());
+      if (mounted) showSnack(context, friendlyError(e, context.l10n));
     } finally {
       if (mounted) setState(() => _saving = false);
     }
@@ -975,7 +990,7 @@ class _PlaylistDetailsScreenState extends State<PlaylistDetailsScreen> {
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _error = e.toString();
+        _error = friendlyError(e, context.l10n);
         _loading = false;
       });
     }
@@ -989,9 +1004,17 @@ class _PlaylistDetailsScreenState extends State<PlaylistDetailsScreen> {
     // error screen.
     final needsLogin =
         state.user == null || _error == 'Please log in to continue.';
+    // Logged in after opening this screen (e.g. from its own login
+    // prompt): the first load bailed out for guests, so the playlist was
+    // never fetched — load it now instead of showing "not found".
+    if (!needsLogin && _playlist == null && !_loading && _error == null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _load();
+      });
+    }
     return Scaffold(
       appBar: AppBar(
-        title: Text(_playlist?.name ?? 'Playlist'),
+        title: Text(_playlist?.name ?? context.l10n.playlist),
         actions: [
           if (_playlist != null)
             PopupMenuButton<String>(
@@ -1002,14 +1025,14 @@ class _PlaylistDetailsScreenState extends State<PlaylistDetailsScreen> {
                   final ok = await confirmDialog(context,
                       title: context.l10n.deletePlaylist,
                       message:
-                          'Delete "${_playlist!.name}"? The songs stay in the library.');
+                          context.l10n.deletePlaylistConfirm(_playlist!.name));
                   if (ok) {
                     try {
                       await state.api.deletePlaylist(widget.playlistId);
                       await state.refreshLibrary();
                       if (mounted) Navigator.of(context).pop();
                     } catch (e) {
-                      if (mounted) showSnack(context, e.toString());
+                      if (mounted) showSnack(context, friendlyError(e, context.l10n));
                     }
                   }
                 }
@@ -1041,7 +1064,7 @@ class _PlaylistDetailsScreenState extends State<PlaylistDetailsScreen> {
                           icon: Icons.playlist_remove,
                       title: context.l10n.playlistNotFound,
                       message:
-                          'This playlist is private or no longer exists.',
+                          context.l10n.playlistPrivateOrGone,
                     )
                   : RefreshIndicator(
                       onRefresh: _load,
@@ -1058,8 +1081,8 @@ class _PlaylistDetailsScreenState extends State<PlaylistDetailsScreen> {
                                         fontWeight: FontWeight.w800)),
                                 const SizedBox(height: 4),
                                 Text(
-                                  '${_songs.length} song${_songs.length == 1 ? '' : 's'}'
-                                  '${(_playlist!.description ?? '').isNotEmpty ? ' • ${_playlist!.description}' : ''}',
+                                  context.l10n.songsCount(_songs.length) +
+                                      '${(_playlist!.description ?? '').isNotEmpty ? ' • ${_playlist!.description}' : ''}',
                                   style: const TextStyle(
                                       color: SbColors.muted),
                                 ),
@@ -1095,7 +1118,7 @@ class _PlaylistDetailsScreenState extends State<PlaylistDetailsScreen> {
                                   trailing: IconButton(
                                     icon: const Icon(Icons.remove_circle_outline,
                                         color: SbColors.muted, size: 20),
-                                    tooltip: 'Remove from playlist',
+                                    tooltip: context.l10n.removeFromPlaylist,
                                     onPressed: () async {
                                       try {
                                         await state.api
@@ -1104,7 +1127,7 @@ class _PlaylistDetailsScreenState extends State<PlaylistDetailsScreen> {
                                         await _load();
                                       } catch (e) {
                                         if (mounted) {
-                                          showSnack(context, e.toString());
+                                          showSnack(context, friendlyError(e, context.l10n));
                                         }
                                       }
                                     },
@@ -1147,7 +1170,7 @@ class _PlaylistDetailsScreenState extends State<PlaylistDetailsScreen> {
         await context.read<AppState>().refreshLibrary();
         await _load();
       } catch (e) {
-        if (mounted) showSnack(context, e.toString());
+        if (mounted) showSnack(context, friendlyError(e, context.l10n));
       }
     }
   }
