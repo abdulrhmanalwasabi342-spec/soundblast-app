@@ -61,12 +61,19 @@ class SoundBlastAudioHandler extends BaseAudioHandler {
   AudioServiceShuffleMode _shuffleMode = AudioServiceShuffleMode.none;
 
   /// The four Samsung-style controls, always present, in Samsung's
-  /// order. The compact (collapsed) card shows only play/pause
-  /// (index 1), matching the collapsed card's single button.
+  /// order: previous, play/pause, next, stop. The stop action is the
+  /// close button: One UI does NOT render the MediaStyle cancel
+  /// button, so a card without a stop control has no way to dismiss
+  /// it (seen on 1.0.28). Its icon is a white X in the vendored
+  /// audio_service drawables (audio_service_stop.png), matching
+  /// Samsung Music's X — the stock square icon rendered as a ■.
+  /// The compact (collapsed) card shows only play/pause (index 1),
+  /// matching the collapsed card's single button.
   List<MediaControl> get _controls => [
         MediaControl.skipToPrevious,
         if (_player.playing) MediaControl.pause else MediaControl.play,
         MediaControl.skipToNext,
+        MediaControl.stop,
       ];
 
   void _broadcastState() {

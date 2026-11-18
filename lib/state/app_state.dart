@@ -273,6 +273,16 @@ class AppState extends ChangeNotifier {
         cachedSongs = list.map(Song.fromJson).toList();
       } catch (_) {}
     }
+    // Restore the signed-in user from local storage BEFORE the server
+    // check: without this, opening the app offline showed the guest
+    // screen (the user looked logged out) because `user` only ever
+    // came from the network.
+    final userRaw = prefs.getString('sb_cached_user');
+    if (userRaw != null) {
+      try {
+        user = User.fromJson(jsonDecode(userRaw));
+      } catch (_) {}
+    }
     // The UI must never wait on the network to appear: on a cold start the
     // Render backend can sleep for up to a minute, and gating the first
     // screen on api.me() left the user staring at a bare spinner for that
@@ -307,11 +317,14 @@ class AppState extends ChangeNotifier {
   }
 
   /// Background server auth check: updates the signed-in user when the
-  /// server answers; a sleeping server just leaves the guest state until
-  /// then instead of blocking the whole app.
+  /// server answers. A failed check must NEVER log the user out: no
+  /// internet (or a sleeping server) is not a dead session — the user
+  /// stays signed in from the local cache, and only a genuine 401
+  /// (reported by the transport via onSessionExpired) clears them.
   Future<void> _refreshAuth() async {
     try {
       user = await api.me();
+      await _cacheUser();
     } catch (_) {
       // One retry: a cold start against the sleeping backend often fails
       // once and answers seconds later; without it the user stays a guest
@@ -319,15 +332,32 @@ class AppState extends ChangeNotifier {
       await Future<void>.delayed(const Duration(seconds: 15));
       try {
         user = await api.me();
+        await _cacheUser();
       } catch (e) {
         lastError = e.toString();
-        user = null;
+        // user stays as restored from the local cache.
       }
     }
     notifyListeners();
     if (user != null) {
       unawaited(refreshLibrary());
     }
+  }
+
+  /// Persist the signed-in user locally (or drop the cache when signed
+  /// out) so the app opens signed-in with no internet.
+  Future<void> _cacheUser() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      if (user == null) {
+        await prefs.remove('sb_cached_user');
+      } else {
+        await prefs.setString(
+          'sb_cached_user',
+          jsonEncode(user!.toJson()),
+        );
+      }
+    } catch (_) {}
   }
 
   /// Load the on-device library (after the permission flow granted access).
@@ -441,6 +471,7 @@ class AppState extends ChangeNotifier {
     final res = await api.login(email, password);
     if (res['success'] == true) {
       user = User.fromJson(res['user']);
+      unawaited(_cacheUser());
       notifyListeners();
       // The library (favorites / liked / playlists) loads in the
       // background: awaiting it here kept the button spinning through
@@ -475,6 +506,7 @@ class AppState extends ChangeNotifier {
     );
     if (res['success'] == true) {
       user = User.fromJson(res['user']);
+      unawaited(_cacheUser());
       notifyListeners();
       // The library (favorites / liked / playlists) loads in the
       // background: awaiting it here kept the button spinning through
@@ -494,6 +526,7 @@ class AppState extends ChangeNotifier {
   /// while every server call fails.
   void handleSessionExpired() {
     user = null;
+    unawaited(_cacheUser());
     favoriteIds = {};
     likedIds = {};
     likedSongs = [];
@@ -514,6 +547,7 @@ class AppState extends ChangeNotifier {
     queueIndex = -1;
     await clearLocalProfilePhoto();
     user = null;
+    unawaited(_cacheUser());
     favoriteIds = {};
     likedIds = {};
     likedSongs = [];

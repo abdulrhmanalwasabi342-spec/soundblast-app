@@ -60,6 +60,19 @@ class User {
     );
   }
 
+  /// Cached locally (SharedPreferences `sb_cached_user`) so the app
+  /// opens signed-in even with no internet: the user must never look
+  /// logged out just because the server could not be reached.
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'name': name,
+        'email': email,
+        'role': role,
+        'isAdmin': isAdmin,
+        'stageName': stageName,
+        'imageUrl': imageUrl,
+      };
+
   bool get isArtist => role == 'artist';
   String get displayName =>
       stageName.isNotEmpty ? stageName : name;
