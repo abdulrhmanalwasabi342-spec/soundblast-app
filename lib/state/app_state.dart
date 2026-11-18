@@ -132,6 +132,26 @@ class AppState extends ChangeNotifier {
   /// nothing must never be silent again.
   String? playbackError;
 
+  /// The raw reason the last play failed, shortened for the snackbar —
+  /// the same diagnosis idea as the home offline banner: a device file
+  /// that cannot be opened and a stream that cannot be reached are
+  /// different problems, and the raw error tells them apart.
+  String? lastPlaybackError;
+
+  /// True when the song that failed to play lives on the device (not a
+  /// stream): the snackbar then says the file cannot be opened instead
+  /// of wrongly telling the user to check the connection.
+  bool lastPlaybackFailedOnDevice = false;
+
+  static bool _isDeviceSong(Song s) =>
+      (s.localPath ?? '').isNotEmpty || s.id < 0;
+
+  static String _shortPlayerError(String e) {
+    var raw = e;
+    if (raw.length > 160) raw = '${raw.substring(0, 160)}…';
+    return raw;
+  }
+
   void clearPlaybackError() {
     playbackError = null;
   }
@@ -555,6 +575,8 @@ class AppState extends ChangeNotifier {
   /// playing (which may be the next playable one when the tapped file
   /// cannot be opened).
   Future<bool> _loadQueueAndPlay(int startIndex) async {
+    lastPlaybackError = null;
+    lastPlaybackFailedOnDevice = false;
     final playable = queue
         .where((s) => s.audioUrl.isNotEmpty || (s.localPath ?? '').isNotEmpty)
         .toList();
@@ -582,6 +604,8 @@ class AppState extends ChangeNotifier {
       // One bad file (unsupported codec, corrupt or moved since the scan)
       // must not kill the whole tap: try the following songs one by one.
       debugPrint('SoundBlast playback failed, trying next files: $e');
+      lastPlaybackError = _shortPlayerError(e.toString());
+      lastPlaybackFailedOnDevice = _isDeviceSong(queue[startIndex]);
       return _playNextPlayable(startIndex);
     }
     notifyListeners();
@@ -615,11 +639,13 @@ class AppState extends ChangeNotifier {
         playbackError = 'skipped';
         notifyListeners();
         return true;
-      } catch (_) {
+      } catch (e) {
+        lastPlaybackError ??= _shortPlayerError(e.toString());
         continue;
       }
     }
     playbackError = 'failed';
+    lastPlaybackFailedOnDevice = _isDeviceSong(queue[fromIndex]);
     notifyListeners();
     return false;
   }

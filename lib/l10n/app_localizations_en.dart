@@ -308,6 +308,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get cancel => 'Cancel';
 
   @override
+  String get cannotPlayDeviceFile => 'Couldn\'t open this file on your device. It may be corrupt, deleted, or in an unsupported format.';
+
+  @override
   String get cannotPlaySong => 'Couldn\'t play this song. Check your connection and try again.';
 
   @override
@@ -1633,13 +1636,25 @@ class AppLocalizationsEn extends AppLocalizations {
   String get tabDownloaded => 'Downloaded';
 
   @override
+  String get tabFavorites => 'Favorites';
+
+  @override
   String get tabLiked => 'Liked';
+
+  @override
+  String get tabPlaylists => 'Playlists';
 
   @override
   String get tapBookmarkHint => 'Tap the bookmark on any song to save it here.';
 
   @override
+  String get tapBookmarkToSave => 'Tap the bookmark on any song to save it here.';
+
+  @override
   String get tapHeartHint => 'Tap the heart on any song to keep it here.';
+
+  @override
+  String get tapHeartToKeep => 'Tap the heart on any song to keep it here.';
 
   @override
   String get tellUsWhatYouThink => 'Tell us what you think';

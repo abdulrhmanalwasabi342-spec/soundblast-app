@@ -286,14 +286,16 @@ class _LibraryScreenState extends State<LibraryScreen>
         title: Text(context.l10n.yourLibrary),
         bottom: TabBar(
           controller: _tab,
+          isScrollable: true,
+          tabAlignment: TabAlignment.start,
           indicatorColor: SbColors.accent,
           labelColor: SbColors.text,
           unselectedLabelColor: SbColors.muted,
-          tabs: const [
-            Tab(text: 'Liked'),
-            Tab(text: 'Favorites'),
-            Tab(text: 'Playlists'),
-            Tab(text: 'Downloaded'),
+          tabs: [
+            Tab(text: context.l10n.tabLiked),
+            Tab(text: context.l10n.tabFavorites),
+            Tab(text: context.l10n.tabPlaylists),
+            Tab(text: context.l10n.tabDownloaded),
           ],
         ),
       ),
@@ -303,11 +305,11 @@ class _LibraryScreenState extends State<LibraryScreen>
               controller: _tab,
               children: [
                 _songList(state, state.likedSongs, Icons.favorite_border,
-                    'No liked songs yet',
-                    'Tap the heart on any song to keep it here.'),
+                    context.l10n.noLikedSongsYet,
+                    context.l10n.tapHeartToKeep),
                 _songList(state, state.myFavorites, Icons.bookmark_border,
-                    'No favorites yet',
-                    'Tap the bookmark on any song to save it here.'),
+                    context.l10n.noFavoritesYet,
+                    context.l10n.tapBookmarkToSave),
                 _playlistsTab(context, state),
                 _downloadedTab(context, state),
               ],
@@ -460,11 +462,11 @@ class _LibraryScreenState extends State<LibraryScreen>
           ),
         ),
         if (store.items.isEmpty)
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
             child: Text(
-              'No offline playlists yet. Create one, then add songs with ⋮ on any on-device song.',
-              style: TextStyle(color: SbColors.muted),
+              context.l10n.noOfflinePlaylists,
+              style: const TextStyle(color: SbColors.muted),
             ),
           )
         else
@@ -480,8 +482,8 @@ class _LibraryScreenState extends State<LibraryScreen>
                       color: SbColors.accent),
                 ),
                 title: Text(p.name),
-                subtitle: Text(
-                    '${p.songIds.length} song${p.songIds.length == 1 ? '' : 's'}'),
+                subtitle:
+                    Text(context.l10n.songsCount(p.songIds.length)),
                 trailing: const Icon(Icons.chevron_right,
                     color: SbColors.muted),
                 onTap: () => Navigator.of(context).push(

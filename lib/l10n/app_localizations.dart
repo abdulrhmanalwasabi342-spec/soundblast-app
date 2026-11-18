@@ -641,6 +641,12 @@ abstract class AppLocalizations {
   /// **'Cancel'**
   String get cancel;
 
+  /// No description provided for @cannotPlayDeviceFile.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t open this file on your device. It may be corrupt, deleted, or in an unsupported format.'**
+  String get cannotPlayDeviceFile;
+
   /// No description provided for @cannotPlaySong.
   ///
   /// In en, this message translates to:
@@ -3107,11 +3113,23 @@ abstract class AppLocalizations {
   /// **'Downloaded'**
   String get tabDownloaded;
 
+  /// No description provided for @tabFavorites.
+  ///
+  /// In en, this message translates to:
+  /// **'Favorites'**
+  String get tabFavorites;
+
   /// No description provided for @tabLiked.
   ///
   /// In en, this message translates to:
   /// **'Liked'**
   String get tabLiked;
+
+  /// No description provided for @tabPlaylists.
+  ///
+  /// In en, this message translates to:
+  /// **'Playlists'**
+  String get tabPlaylists;
 
   /// No description provided for @tapBookmarkHint.
   ///
@@ -3119,11 +3137,23 @@ abstract class AppLocalizations {
   /// **'Tap the bookmark on any song to save it here.'**
   String get tapBookmarkHint;
 
+  /// No description provided for @tapBookmarkToSave.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap the bookmark on any song to save it here.'**
+  String get tapBookmarkToSave;
+
   /// No description provided for @tapHeartHint.
   ///
   /// In en, this message translates to:
   /// **'Tap the heart on any song to keep it here.'**
   String get tapHeartHint;
+
+  /// No description provided for @tapHeartToKeep.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap the heart on any song to keep it here.'**
+  String get tapHeartToKeep;
 
   /// No description provided for @tellUsWhatYouThink.
   ///

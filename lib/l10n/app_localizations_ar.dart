@@ -314,6 +314,9 @@ class AppLocalizationsAr extends AppLocalizations {
   String get cancel => 'إلغاء';
 
   @override
+  String get cannotPlayDeviceFile => 'تعذّر فتح هذا الملف على جهازك. قد يكون تالفًا أو محذوفًا أو بصيغة غير مدعومة.';
+
+  @override
   String get cannotPlaySong => 'تعذّر تشغيل هذه الأغنية. تحقّق من الاتصال وحاول مجددًا.';
 
   @override
@@ -1651,13 +1654,25 @@ class AppLocalizationsAr extends AppLocalizations {
   String get tabDownloaded => 'المنزّلة';
 
   @override
+  String get tabFavorites => 'المفضلة';
+
+  @override
   String get tabLiked => 'المعجبة';
+
+  @override
+  String get tabPlaylists => 'قوائم التشغيل';
 
   @override
   String get tapBookmarkHint => 'اضغط الإشارة على أي أغنية لحفظها هنا.';
 
   @override
+  String get tapBookmarkToSave => 'اضغط على الإشارة في أي أغنية لتحفظها هنا.';
+
+  @override
   String get tapHeartHint => 'اضغط القلب على أي أغنية للاحتفاظ بها هنا.';
+
+  @override
+  String get tapHeartToKeep => 'اضغط على القلب في أي أغنية لتحفظها هنا.';
 
   @override
   String get tellUsWhatYouThink => 'أخبرنا برأيك';

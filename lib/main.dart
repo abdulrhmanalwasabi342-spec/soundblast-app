@@ -223,13 +223,17 @@ class _AppShellState extends State<AppShell> {
     if (code == null) return;
     state.clearPlaybackError();
     if (!mounted) return;
+    final message = switch (code) {
+      'noAudio' => context.l10n.songNoAudio,
+      'skipped' => context.l10n.skippedUnplayable,
+      _ => state.lastPlaybackFailedOnDevice
+          ? context.l10n.cannotPlayDeviceFile
+          : context.l10n.cannotPlaySong,
+    };
+    final detail = state.lastPlaybackError;
     showSnack(
       context,
-      switch (code) {
-        'noAudio' => context.l10n.songNoAudio,
-        'skipped' => context.l10n.skippedUnplayable,
-        _ => context.l10n.cannotPlaySong,
-      },
+      detail != null && code == 'failed' ? '$message\n$detail' : message,
     );
   }
 
