@@ -9,6 +9,7 @@ import android.os.PowerManager
 import android.provider.MediaStore
 import android.provider.Settings
 import com.ryanheise.audioservice.AudioServiceActivity
+import com.ryanheise.audioservice.AudioServicePlugin
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
 
@@ -23,6 +24,22 @@ import io.flutter.plugin.common.MethodChannel
 class MainActivity : AudioServiceActivity() {
     companion object {
         private const val CHANNEL = "com.soundblast.app/media_store"
+    }
+
+    // The shared engine belongs to AudioServicePlugin, not to this
+    // Activity: when the user swipes the app away from recents, the
+    // Activity is destroyed but the engine (Dart isolate + ExoPlayer)
+    // must live on inside the foreground service, or the music stops
+    // the moment the app closes. AudioServiceActivity only overrides
+    // provideFlutterEngine; its sibling AudioServiceFragmentActivity
+    // overrides these two as well — mirror it here.
+    override fun getCachedEngineId(): String? {
+        AudioServicePlugin.getFlutterEngine(this)
+        return AudioServicePlugin.getFlutterEngineId()
+    }
+
+    override fun shouldDestroyEngineWithHost(): Boolean {
+        return false
     }
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {

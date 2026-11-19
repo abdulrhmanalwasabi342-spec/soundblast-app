@@ -134,7 +134,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get appName => 'SoundBlast';
 
   @override
-  String get appVersionLabel => 'الإصدار 1.0.29 — تطبيق أندرويد';
+  String get appVersionLabel => 'الإصدار 1.0.30 — تطبيق أندرويد';
 
   @override
   String get archive => 'أرشفة';

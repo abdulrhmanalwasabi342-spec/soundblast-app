@@ -308,7 +308,7 @@ abstract class AppLocalizations {
   /// No description provided for @appVersionLabel.
   ///
   /// In en, this message translates to:
-  /// **'Version 1.0.29 — Android app'**
+  /// **'Version 1.0.30 — Android app'**
   String get appVersionLabel;
 
   /// No description provided for @archive.

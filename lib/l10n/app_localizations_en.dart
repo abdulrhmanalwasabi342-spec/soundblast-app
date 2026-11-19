@@ -131,7 +131,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get appName => 'SoundBlast';
 
   @override
-  String get appVersionLabel => 'Version 1.0.29 — Android app';
+  String get appVersionLabel => 'Version 1.0.30 — Android app';
 
   @override
   String get archive => 'Archive';
